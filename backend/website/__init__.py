@@ -84,21 +84,29 @@ def create_database(app):
         return
     
     # 
-    for i, (username, password or "password") in enumerate(zip_longest(admin_usernames, admin_passwords, fillvalue=None)):
+    for i, (username, password) in enumerate(zip_longest(admin_usernames, admin_passwords, fillvalue=None)):
         if(username is None):
             break
 
-        # this is actually wrong, but I'm too lazy to fix it rn.
-        first_name = admin_first_names[i] or f"admin{i}"
-        last_name = admin_last_names[i] or f"admin{i}"
-        email = admin_emails[i] or f"admin{i}@example.com"
+        try:
+            first_name = admin_first_names[i]
+        except:
+            first_name = f"admin{i}"
+        try:
+            last_name = admin_last_names[i]
+        except:
+            last_name = f"admin{i}"
+        try:
+            email = admin_emails[i]
+        except:
+            email = f"admin{i}@example.com"
 
         admin_user = User(
             first_name=first_name,
             last_name=last_name,
             username=username,
             email=email
-            password=password,
+            password=password or "password",
             is_admin=True
         )
         db.session.add(admin_user)
