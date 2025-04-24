@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from itertools import zip_longest
 from dotenv import load_dotenv
+from flask_cors import CORS
 from flask import Flask
 
 # from .site import main, auth as site_main, site_auth
@@ -23,6 +24,7 @@ DB_NAME = os.environ.get("DB_NAME", "database.db")
 
 def start():
     app = Flask(__name__)
+    CORS(app)
     app.config["SECRET_KEY"] = FLASK_SECRET_KEY
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
 
