@@ -30,10 +30,10 @@ def start():
 
     db.init_app(app)
 
-    app.register_blueprint(site_main)
-    app.register_blueprint(site_auth, url_prefix="/auth")
+    # app.register_blueprint(site_main)
+    # app.register_blueprint(site_auth, url_prefix="/auth")
 
-    app.register_blueprint(api_main, url_prefix="/api/v1")
+    app.register_blueprint(api, url_prefix="/api/v1")
 
     from .models import User
 
@@ -54,61 +54,47 @@ def create_database(app):
         return
     
     with app.app_context():
+        db.create_all()
         from .models import User
 
-    # comma-separated credentials
-    admin_usernames = os.environ.get("DEFAULT_ADMIN_USERNAMES", "").split(",")
-    admin_passwords = os.environ.get("DEFAULT_ADMIN_PASSWORDS", "").split(",")
-    
-    admin_first_names = os.environ.get("DEFAULT_ADMIN_FIRST_NAMES", "").split(",")
-    admin_last_names = os.environ.get("DEFAULT_ADMIN_LAST_NAMES", "").split(",")
+        # comma-separated credentials
+        admin_usernames = os.environ.get("DEFAULT_ADMIN_USERNAMES", "").split(",")
+        admin_passwords = os.environ.get("DEFAULT_ADMIN_PASSWORDS", "").split(",")
 
-    admin_emails = os.environ.get("DEFAULT_ADMIN_EMAILS", "").split(",")
+        admin_emails = os.environ.get("DEFAULT_ADMIN_EMAILS", "").split(",")
 
-    admin_usernames_defined = (admin_usernames is not None) and (len(admin_usernames) > 0)
-    admin_passwords_defined = (admin_passwords is not None) and (len(admin_passwords) > 0)
+        admin_usernames_defined = (admin_usernames is not None) and (len(admin_usernames) > 0)
+        admin_passwords_defined = (admin_passwords is not None) and (len(admin_passwords) > 0)
 
-    # if no credentials, generic defaults because admin user is required
-    if(not admin_users_defined or not admin_passwords_defined):
-        admin_user = User(
-            first_name="John",
-            last_name="Doe",
-            username="admin",
-            email=admin_emails[0] if admin_emails else "admin@example.com",
-            password="password",
-            is_admin=True
-        )
-        db.session.add(admin_user)
+        # if no credentials, generic defaults because admin user is required
+        if(not admin_usernames_defined or not admin_passwords_defined):
+            admin_user = User(
+                username="admin",
+                email=admin_emails[0] if admin_emails else "admin@example.com",
+                password="password",
+                is_admin=True
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            print("Created Database")
+            return
+        
+        # 
+        for i, (username, password) in enumerate(zip_longest(admin_usernames, admin_passwords, fillvalue=None)):
+            if(username is None):
+                break
+
+            try:
+                email = admin_emails[i]
+            except:
+                email = f"admin{i}@example.com"
+
+            admin_user = User(
+                username=username,
+                email=email,
+                password=password or "password",
+                is_admin=True
+            )
+            db.session.add(admin_user)
         db.session.commit()
         print("Created Database")
-        return
-    
-    # 
-    for i, (username, password) in enumerate(zip_longest(admin_usernames, admin_passwords, fillvalue=None)):
-        if(username is None):
-            break
-
-        try:
-            first_name = admin_first_names[i]
-        except:
-            first_name = f"admin{i}"
-        try:
-            last_name = admin_last_names[i]
-        except:
-            last_name = f"admin{i}"
-        try:
-            email = admin_emails[i]
-        except:
-            email = f"admin{i}@example.com"
-
-        admin_user = User(
-            first_name=first_name,
-            last_name=last_name,
-            username=username,
-            email=email
-            password=password or "password",
-            is_admin=True
-        )
-        db.session.add(admin_user)
-    db.session.commit()
-    print("Created Database")
