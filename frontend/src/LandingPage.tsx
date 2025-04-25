@@ -20,9 +20,9 @@ function Header() {
         <nav className="flex items-center justify-between mb-16">
         <div className="text-2xl font-bold">AI Adventure</div>
         <div className="space-x-4">
-            <Button variant="ghost" className="text-foreground hover:text-primary">About</Button>
-            <Button variant="ghost" className="text-foreground hover:text-primary">Features</Button>
-            <Button variant="default" className="bg-primary text-primary-foreground">Start Playing</Button>
+            <Button variant="default" className="text-foreground hover:text-primary">About</Button>
+            <Button variant="default" className="text-foreground hover:text-primary">Features</Button>
+            <Button variant="default" className="text-foreground hover:text-primary">Start Playing</Button>
         </div>
         </nav>
     );
@@ -37,7 +37,7 @@ function HeroSection() {
         <p className="text-xl text-muted-foreground mb-8">
             Experience unique, dynamically generated stories that adapt to your choices
         </p>
-        <Button size="lg" className="text-lg px-8 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Button variant="default" className="text-foreground hover:text-primary">
             Begin Your Journey
         </Button>
         </motion.div>
@@ -82,10 +82,10 @@ function CallToAction() {
             Join thousands of players creating their own unique stories
         </p>
         <div className="space-x-4">
-            <Button size="lg" variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="lg" variant="default" className="text-foreground hover:text-primary">
             Play Now
             </Button>
-            <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10">
+            <Button size="lg" variant="outline" className="text-foreground hover:text-primary">
             Learn More
             </Button>
         </div>
