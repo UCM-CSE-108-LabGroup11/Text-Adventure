@@ -53,15 +53,6 @@
     --sidebar-ring: oklch(0.57 0.16 287); /* Lavender: #7287fd */
 }
 
-a {
-    font-weight: 500;
-    color: oklch(0.55 0.26 252); /* Blue: #1e66f5 */
-    text-decoration: inherit;
-}
-a:hover {
-    color: oklch(0.51 0.23 329); /* Mauve: #8839ef */
-}
-
 body {
     margin: 0;
     display: flex;
@@ -78,24 +69,7 @@ h1 {
     line-height: 1.1;
 }
 
-button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: oklch(0.81 0.04 258); /* Surface1: #bcc0cc */
-    cursor: pointer;
-    transition: border-color 0.25s;
-}
-button:hover {
-    border-color: oklch(0.57 0.16 287); /* Lavender: #7287fd */
-}
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-}
+
 
 @theme inline {
     --radius-sm: calc(var(--radius) - 4px);

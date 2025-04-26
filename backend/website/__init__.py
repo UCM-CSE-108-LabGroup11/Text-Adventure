@@ -59,20 +59,16 @@ def create_database(app):
     # comma-separated credentials
     admin_usernames = os.environ.get("DEFAULT_ADMIN_USERNAMES", "").split(",")
     admin_passwords = os.environ.get("DEFAULT_ADMIN_PASSWORDS", "").split(",")
-    
-    admin_first_names = os.environ.get("DEFAULT_ADMIN_FIRST_NAMES", "").split(",")
-    admin_last_names = os.environ.get("DEFAULT_ADMIN_LAST_NAMES", "").split(",")
 
     admin_emails = os.environ.get("DEFAULT_ADMIN_EMAILS", "").split(",")
 
+    # check if none to prevent TypeError NoneType hsa no len()
     admin_usernames_defined = (admin_usernames is not None) and (len(admin_usernames) > 0)
     admin_passwords_defined = (admin_passwords is not None) and (len(admin_passwords) > 0)
 
     # if no credentials, generic defaults because admin user is required
     if(not admin_users_defined or not admin_passwords_defined):
         admin_user = User(
-            first_name="John",
-            last_name="Doe",
             username="admin",
             email=admin_emails[0] if admin_emails else "admin@example.com",
             password="password",
@@ -83,12 +79,10 @@ def create_database(app):
         print("Created Database")
         return
     
-    # 
-    for i, (username, password or "password") in enumerate(zip_longest(admin_usernames, admin_passwords, fillvalue=None)):
+    for i, (username, password) in enumerate(zip_longest(admin_usernames, admin_passwords, fillvalue=None)):
         if(username is None):
             break
 
-        # this is actually wrong, but I'm too lazy to fix it rn.
         first_name = admin_first_names[i] or f"admin{i}"
         last_name = admin_last_names[i] or f"admin{i}"
         email = admin_emails[i] or f"admin{i}@example.com"
@@ -98,7 +92,7 @@ def create_database(app):
             last_name=last_name,
             username=username,
             email=email
-            password=password,
+            password=cph(password or "password"),
             is_admin=True
         )
         db.session.add(admin_user)

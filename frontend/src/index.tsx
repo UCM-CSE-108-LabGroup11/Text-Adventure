@@ -1,10 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './main.css'
-import LandingPage from './LandingPage.tsx'
+import App from './App.tsx'
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.querySelector('#root')!).render(
     <StrictMode>
-        <LandingPage />
+        <App />
     </StrictMode>,
 )

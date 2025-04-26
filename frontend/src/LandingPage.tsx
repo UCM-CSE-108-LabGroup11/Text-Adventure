@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function LandingPage() {
     return (
@@ -20,9 +21,9 @@ function Header() {
         <nav className="flex items-center justify-between mb-16">
         <div className="text-2xl font-bold">AI Adventure</div>
         <div className="space-x-4">
-            <Button variant="default">About</Button>
-            <Button variant="default">Features</Button>
-            <Button variant="default">Start Playing</Button>
+            <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
+            <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+            <Button asChild size="sm" variant="link"><Link to="/Play">Start Playing</Link></Button>
         </div>
         </nav>
     );
@@ -37,7 +38,7 @@ function HeroSection() {
         <p className="text-xl text-muted-foreground mb-8">
             Experience unique, dynamically generated stories that adapt to your choices
         </p>
-        <Button variant="default">Begin Your Journey</Button>
+        <Button asChild size="lg" variant="default"><Link to="/Play">Begin Your Journey</Link></Button>
         </motion.div>
     );
 }
@@ -80,8 +81,8 @@ function CallToAction() {
             Join thousands of players creating their own unique stories
         </p>
         <div className="space-x-4">
-            <Button size="lg" variant="default">Play Now</Button>
-            <Button size="lg" variant="default">Learn More</Button>
+            <Button asChild size="sm" variant="secondary"><Link to="/Play">Play Now</Link></Button>
+            <Button asChild size="sm" variant="secondary"><Link to="/Features">Learn More</Link></Button>
         </div>
         </div>
     );
