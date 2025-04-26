@@ -92,7 +92,7 @@ def create_database(app):
             admin_user = User(
                 username=username,
                 email=email,
-                password=password or "password",
+                password=gph(password or "password"),
                 is_admin=True
             )
             db.session.add(admin_user)
