@@ -1,95 +1,141 @@
-import { useState } from "react";
-export default function Play() {
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
-  // Stores the ongoing chat log as an array of message strings (might change idk)
+// Header component reused from LandingPage for consistent navigation
+function Header() {
+  return (
+    <nav className="flex items-center justify-between mb-8">
+      <div className="text-2xl font-bold">
+        <Link to="/" className="hover:underline text-inherit">
+          AI Adventure
+        </Link>
+      </div>
+      <div className="space-x-4">
+        <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
+        <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+      </div>
+    </nav>
+  );
+}
+
+export default function Play() {
+  // Stores the ongoing chat log as an array of message strings
   const [chat, setChat] = useState<string[]>([]);
   // Tracks current input from the user
   const [input, setInput] = useState("");
-  // Stores the OpenAI API key (optional user-provided)
-  const [apiKey, setApiKey] = useState("");
-  // Tracks the current selected provider (only gpt is supported for now)
+  // Tracks the current selected provider (currently only GPT supported)
   const [provider, setProvider] = useState("openai");
+  // Whether we're currently waiting for the DM to respond
+  const [loading, setLoading] = useState(false);
+
+  // Ref to scroll the chat window down as new messages come in
+  const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
   // Handles sending a message to the backend API
   const sendMessage = async () => {
     if (!input.trim()) return; // prevent sending empty messages
 
     const userText = input;
-
-    // Show user's message immediately in the chat window
-    setChat((prev) => [...prev, `You: ${userText}`]);
+    setChat((prev) => [...prev, `You: ${userText}`]); // instantly show user input
     setInput(""); // clear the input box
+    setLoading(true); // show loading state
 
     try {
-      // POST request to the backend
+      // Send POST request to backend
       const res = await fetch("http://localhost:5000/api/v1/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: "Player1", // TODO: make this dynamic with useState
+          username: "Player1", // TODO: replace with logged-in user's username
           message: userText,
-          apiKey,
           provider,
         }),
       });
 
       const data = await res.json();
 
-      // Show response from the AI Dungeon Master
+      // Append DM's reply to chat log
       if (data.reply) {
         setChat((prev) => [...prev, `DM: ${data.reply}`]);
       } else {
         setChat((prev) => [...prev, `Error: ${data.error || "Unknown error"}`]);
       }
     } catch {
-      // Handle fetch failure (e.g. server offline)
+      // Network failure or server error
       setChat((prev) => [...prev, "Network error"]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div style={{ padding: "1rem", fontFamily: "sans-serif" }}>
-      <h2>Solo Adventure</h2>
+  // Auto-scroll to the bottom of the chat on new message
+  useEffect(() => {
+    chatBoxRef.current?.scrollTo({ top: chatBoxRef.current.scrollHeight, behavior: "smooth" });
+  }, [chat, loading]);
 
-      {/* Input for OpenAI key and provider selection */}
-      <div style={{ marginBottom: "0.5rem" }}>
+  return (
+    <motion.div
+      className="min-h-screen bg-background text-foreground px-4 py-8 max-w-3xl mx-auto"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
+      <Header />
+
+      {/* Chat log with animated message bubbles */}
+      <div
+        ref={chatBoxRef}
+        className="bg-card border rounded p-4 h-96 overflow-y-auto mb-4 shadow-inner flex flex-col gap-2"
+      >
+        {chat.map((line, i) => {
+          const isUser = line.startsWith("You:");
+          const content = line.replace(/^You:\s?|^DM:\s?/, "");
+
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              className={`max-w-[75%] px-4 py-2 rounded-lg text-sm shadow ${
+                isUser
+                  ? "self-end bg-blue-500 text-white"
+                  : "self-start bg-gray-200 text-black"
+              }`}
+            >
+              {content}
+            </motion.div>
+          );
+        })}
+
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="self-start text-sm text-muted-foreground italic"
+          >
+            DM is thinking...
+          </motion.div>
+        )}
+      </div>
+
+      {/* Input box and send button */}
+      <div className="flex gap-2">
         <input
           type="text"
-          placeholder="Your OpenAI key (optional)"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          style={{ width: "320px", marginRight: "10px" }}
+          placeholder="What do you do?"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          className="flex-1 px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
-        <select value={provider} onChange={(e) => setProvider(e.target.value)}>
-          <option value="openai">OpenAI</option>
-          <option value="dummy">Fake (no key)</option> {/* Future placeholder/test option */}
-        </select>
+        <Button onClick={sendMessage} className="px-4 py-2" disabled={loading}>
+          Send
+        </Button>
       </div>
-
-      {/* Chat window display */}
-      <div style={{
-        background: "#f8f8f8",
-        padding: "1rem",
-        height: "300px",
-        overflowY: "auto",
-        marginBottom: "1rem",
-        border: "1px solid #ccc"
-      }}>
-        {chat.map((line, i) => (
-          <div key={i} style={{ marginBottom: "0.5rem" }}>{line}</div>
-        ))}
-      </div>
-
-      {/* User input and send button */}
-      <input
-        type="text"
-        placeholder="What do you do?"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-        style={{ width: "70%", marginRight: "10px" }}
-      />
-      <button onClick={sendMessage}>Send</button>
-    </div>
+    </motion.div>
   );
 }
