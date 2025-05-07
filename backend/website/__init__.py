@@ -32,10 +32,9 @@ def start():
 
     # app.register_blueprint(site_main)
     # app.register_blueprint(site_auth, url_prefix="/auth")
-
+    from .models import User
     app.register_blueprint(api, url_prefix="/api/v1")
 
-    from .models import User
 
     login_manager = LoginManager()
     login_manager.login_view = "site_auth.login"

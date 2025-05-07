@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import openai
 import os
 from dotenv import load_dotenv
+from flask_login import current_user, login_required
 
 # Load environment variables from .env file (like your default OpenAI API key)
 load_dotenv()
@@ -14,6 +15,36 @@ chat_bp = Blueprint("chat", __name__)
 
 # In-memory session store to keep track of per-user chat history will change later a this resets when server restarts
 session_memory = {}
+
+chat_management_bp = Blueprint("chat_management", __name__)
+
+@chat_management_bp.route("/chats", methods=["POST"])
+@login_required
+def create_chat():
+    from website.models import Chat
+    from website import db
+
+    data = request.get_json()
+    name = data.get("name")
+    rule_mode = data.get("rule_mode", "narrative")
+
+    if not name:
+        return jsonify({"error": "World name is required"}), 400
+
+    new_chat = Chat(
+        name=name,
+        rule_mode=rule_mode,
+        user=current_user
+    )
+
+    db.session.add(new_chat)
+    db.session.commit()
+
+    return jsonify({
+        "id": new_chat.id,
+        "name": new_chat.name,
+        "rule_mode": new_chat.rule_mode
+    }), 201
 
 @chat_bp.route("/chat", methods=["POST"])
 def chat():
@@ -31,7 +62,7 @@ def chat():
     # Use user's API key if provided otherwise fall back to default
     openai.api_key = api_key or os.getenv("OPENAI_API_KEY")
 
-    # Load conversation history if user already has one if not start a new session
+    # Load conversation history if user already has one if n not  rt a new session
     history = session_memory.get(username, [
         {"role": "system", "content": (
             "You are the Dungeon Master for a text-based fantasy RPG. "

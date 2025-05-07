@@ -54,6 +54,9 @@ class Chat(db.Model):
     user = db.relationship("User", back_populates="chats")
     permissions = db.relationship("Permission", back_populates="chat")
     is_public = db.Column(db.Boolean)
+    name = db.Column(db.String(255), nullable=False) 
+    rule_mode = db.Column(db.String(64), default="narrative")  
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship("Message", back_populates="chat")
 
 class Message(db.Model):
