@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
+
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {
@@ -30,6 +32,8 @@ export default function ChatBox() {
   // Whether we're currently waiting for the DM to respond
   const [loading, setLoading] = useState(false);
 
+  const { chatId } = useParams<{ chatId: string }>();
+
   // Ref to scroll the chat window down as new messages come in
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
@@ -51,6 +55,7 @@ export default function ChatBox() {
           username: "Player1", // TODO: replace with logged-in user's username
           message: userText,
           provider,
+          chatId, 
         }),
       });
 

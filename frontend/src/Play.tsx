@@ -35,7 +35,7 @@ export default function WorldSelect() {
     try {
       const newChat = await createNewChat(newName, ruleMode);
       // TODO: Redirect with proper chat ID for later retrieval
-      navigate(`/Play${newChat.id}`);
+      navigate(`/Play/${newChat.id}`);
     } catch (err) {
       console.error("Failed to create world:", err);
     }
@@ -44,7 +44,7 @@ export default function WorldSelect() {
   // This function selects the pre-created room and navigates to play it
   const handleSelect = (chatId: number) => {
     // TODO: Need to load selected chat history before navigating
-    navigate("/Play");
+    navigate(`/Play/${chatId}`);
   };
 
   return (
