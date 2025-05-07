@@ -20,7 +20,7 @@ function Header() {
   );
 }
 
-export default function Play() {
+export default function ChatBox() {
   // Stores the ongoing chat log as an array of message strings
   const [chat, setChat] = useState<string[]>([]);
   // Tracks current input from the user
