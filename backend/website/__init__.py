@@ -24,7 +24,7 @@ DB_NAME = os.environ.get("DB_NAME", "database.db")
 
 def start():
     app = Flask(__name__)
-    CORS(app)
+    CORS(app, supports_credentials=True)
     app.config["SECRET_KEY"] = FLASK_SECRET_KEY
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
 
