@@ -29,29 +29,62 @@ RULE_MODE_SYSTEM_PROMPTS = {
 }
 
 @chat_management_bp.route("/chats", methods=["POST"])
-# @login_required
+# @login_required Because no Auth
 def create_chat():
-    from website.models import Chat
+    from website.models import Chat, Message, Variant, User
     from website import db
 
     data = request.get_json()
     name = data.get("name")
     rule_mode = data.get("rule_mode", "narrative")
+    theme = data.get("theme", "default")
+    custom_theme = data.get("custom_theme", "")
 
     if not name:
         return jsonify({"error": "World name is required"}), 400
-    
-    
+
     # new_chat = Chat(name=name, rule_mode=rule_mode, user=current_user) 
 
-    new_chat = Chat(name=name, rule_mode=rule_mode) # Remove this when we have authentication 
+    new_chat = Chat(name=name, rule_mode=rule_mode, theme=theme, custom_theme=custom_theme) # Remove this when we have authentication 
     db.session.add(new_chat)
+    db.session.flush()  # Get ID before GPT
+
+    # Get dynamic rule-based system prompt
+    rule_prompt = RULE_MODE_SYSTEM_PROMPTS.get(rule_mode, RULE_MODE_SYSTEM_PROMPTS["narrative"])
+    history = [{"role": "system", "content": rule_prompt}]
+
+    # Append theme-based intro prompt
+    theme_description = custom_theme if theme == "custom" else theme.replace("-", " ")
+    intro_prompt = f"Begin the adventure in a setting inspired by: {theme_description}. Set the scene, but do not prompt the player yet."
+    history.append({"role": "user", "content": intro_prompt})
+
+    # Generate GPT intro
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=history,
+            temperature=0.9,
+        )
+        intro_text = response.choices[0].message.content.strip()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"GPT failed: {str(e)}"}), 500
+
+    # Save AI intro message
+    intro_msg = Message(chatid=new_chat.id, user=None)
+    db.session.add(intro_msg)
+    db.session.flush()
+    db.session.add(Variant(messageid=intro_msg.id, text=intro_text))
+
     db.session.commit()
 
     return jsonify({
         "id": new_chat.id,
         "name": new_chat.name,
-        "rule_mode": new_chat.rule_mode
+        "rule_mode": new_chat.rule_mode,
+        "theme": new_chat.theme,
+        "custom_theme": new_chat.custom_theme,
+        "intro": intro_text
     }), 201
 
 @chat_bp.route("/chat", methods=["POST"])
@@ -112,7 +145,7 @@ def chat():
     # Append the new user message to the conversation
     history.append({"role": "user", "content": message})
 
-    # Run OpenAI moderation check on user message
+    # Run OpenAI moderation check on user message (If were using other LLM's we need to change this, buh)
     try:
         moderation_response = openai.Moderation.create(input=message)
         if moderation_response["results"][0]["flagged"]:

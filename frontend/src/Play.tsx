@@ -3,14 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 // TODO: Replace with real API call once backend is live
-async function createNewChat(name: string, ruleMode: string) {
+async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string) {
   const res = await fetch("http://localhost:5000/api/v1/chats", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include", // assuming user session is stored in cookies
-    body: JSON.stringify({ name, rule_mode: ruleMode }),
+    body: JSON.stringify({
+      name,
+      rule_mode: ruleMode,
+      theme,
+      custom_theme: customTheme,
+    }),
   });
 
   const data = await res.json();
@@ -20,6 +25,8 @@ async function createNewChat(name: string, ruleMode: string) {
 export default function WorldSelect() {
   const [newName, setNewName] = useState("");
   const [ruleMode, setRuleMode] = useState("narrative");
+  const [theme, setTheme] = useState("default");
+  const [customTheme, setCustomTheme] = useState("");
   const navigate = useNavigate();
 
   // TODO: Replace with real chat list (from DB or API)
@@ -28,12 +35,12 @@ export default function WorldSelect() {
     { id: 2, name: "Cyber Wastes", rule_mode: "rules-lite" },
   ]);
 
-  // This function creates the room/chat with the options/ruleset 
+  // This function creates the room/chat with the options/ruleset
   const handleCreate = async () => {
     if (!newName.trim()) return;
 
     try {
-      const newChat = await createNewChat(newName, ruleMode);
+      const newChat = await createNewChat(newName, ruleMode, theme, customTheme);
       // TODO: Redirect with proper chat ID for later retrieval
       navigate(`/Play/${newChat.id}`);
     } catch (err) {
@@ -68,6 +75,7 @@ export default function WorldSelect() {
       <hr className="my-6" />
 
       <h3 className="text-xl font-semibold">Create New World</h3>
+
       <input
         type="text"
         placeholder="World name"
@@ -75,6 +83,7 @@ export default function WorldSelect() {
         onChange={(e) => setNewName(e.target.value)}
         className="w-full px-3 py-2 border rounded"
       />
+
       <select
         value={ruleMode}
         onChange={(e) => setRuleMode(e.target.value)}
@@ -82,11 +91,32 @@ export default function WorldSelect() {
       >
         <option value="narrative">Narrative (story-focused)</option>
         <option value="rules-lite">Rules-Lite (rolls + limits)</option>
-        {/* TODO: Add more rule sets later, idk if were gonna add more than one tbh*/}
+        {/* TODO: Add more rule sets later */}
       </select>
 
-        {/*Again this doesn't do anything yet*/} 
-      <Button onClick={handleCreate} className="mt-3">
+      <select
+        value={theme}
+        onChange={(e) => setTheme(e.target.value)}
+        className="w-full px-3 py-2 border rounded"
+      >
+        <option value="default">Default Theme</option>
+        <option value="dark-fantasy">Dark Fantasy</option>
+        <option value="sci-fi">Sci-Fi</option>
+        <option value="high-fantasy">High Fantasy</option>
+        <option value="custom">Custom Theme</option>
+      </select>
+
+      {theme === "custom" && (
+        <input
+          type="text"
+          placeholder="Describe your custom theme"
+          value={customTheme}
+          onChange={(e) => setCustomTheme(e.target.value)}
+          className="w-full px-3 py-2 border rounded"
+        />
+      )}
+
+      <Button onClick={handleCreate} className="mt-3 w-full">
         Create and Start
       </Button>
     </div>

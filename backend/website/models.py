@@ -58,6 +58,8 @@ class Chat(db.Model):
     rule_mode = db.Column(db.String(64), default="narrative")  
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship("Message", back_populates="chat")
+    theme = db.Column(db.String(64), default="default")
+    custom_theme = db.Column(db.Text, nullable=True)
 
 class Message(db.Model):
     __tablename__ = "messages"
