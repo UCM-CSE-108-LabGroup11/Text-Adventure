@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { useParams } from "react-router-dom";
-
+import { Link, useParams, useLocation } from "react-router-dom";
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {
@@ -33,6 +31,8 @@ export default function ChatBox() {
   const [loading, setLoading] = useState(false);
 
   const { chatId } = useParams<{ chatId: string }>();
+  const location = useLocation();
+  const intro = location.state?.intro;
 
   // Ref to scroll the chat window down as new messages come in
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -75,10 +75,20 @@ export default function ChatBox() {
     }
   };
 
+  useEffect(() => {
+    if (intro) {
+      const timeout = setTimeout(() => {
+        setChat([`DM: ${intro}`]);
+      }, 1500); // 1 second delay before showing intro
+  
+      return () => clearTimeout(timeout); // cleanup on unmount
+    }
+  }, [intro]);
+
   // Auto-scroll to the bottom of the chat on new message
   useEffect(() => {
     chatBoxRef.current?.scrollTo({ top: chatBoxRef.current.scrollHeight, behavior: "smooth" });
-  }, [chat, loading]);
+  }, [chat]);
 
   return (
     <motion.div

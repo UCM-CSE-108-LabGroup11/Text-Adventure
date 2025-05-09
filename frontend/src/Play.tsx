@@ -42,7 +42,9 @@ export default function WorldSelect() {
     try {
       const newChat = await createNewChat(newName, ruleMode, theme, customTheme);
       // TODO: Redirect with proper chat ID for later retrieval
-      navigate(`/Play/${newChat.id}`);
+      navigate(`/Play/${newChat.id}`, {
+        state: { intro: newChat.intro }
+      });
     } catch (err) {
       console.error("Failed to create world:", err);
     }

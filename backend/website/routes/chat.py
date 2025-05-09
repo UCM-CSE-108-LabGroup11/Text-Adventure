@@ -55,7 +55,11 @@ def create_chat():
 
     # Append theme-based intro prompt
     theme_description = custom_theme if theme == "custom" else theme.replace("-", " ")
-    intro_prompt = f"Begin the adventure in a setting inspired by: {theme_description}. Set the scene, but do not prompt the player yet."
+    intro_prompt = (
+    f"Begin the game with a short, vivid description of a scene inspired by: {theme_description}. "
+    "Keep it under 4 sentences. Make it immersive, but end with a subtle hook or point of tension. "
+    "Do not explain the setting — drop the player directly into it. Avoid exposition or world history."
+    )
     history.append({"role": "user", "content": intro_prompt})
 
     # Generate GPT intro
