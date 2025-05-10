@@ -57,9 +57,37 @@ def create_character():
         "chatid": char.chatid,
         "name": char.name,
         "char_class": char.char_class,
-        "backstory": char.backstory
+        "backstory": char.backstory,
+        "level": char.level
       }
     }), 201
+
+@chat_management_bp.route("/character", methods=["GET"])
+def get_character():
+    from website.models import Character
+
+    chatid = request.args.get("chatid")
+    if not chatid:
+        return jsonify({"error": "Missing chatid"}), 400
+
+    char = Character.query.filter_by(chatid=chatid).first()
+    if not char:
+        return jsonify({"error": "Character not found"}), 404
+
+    return jsonify({
+        "character": {
+            "id": char.id,
+            "chatid": char.chatid,
+            "name": char.name,
+            "char_class": char.char_class,
+            "backstory": char.backstory,
+            "health": char.health,
+            "mana": char.mana,
+            "level": char.level,
+            "strength": char.strength,
+        }
+    }), 200
+
 
 @chat_management_bp.route("/chats", methods=["POST"])
 # @login_required Because no Auth

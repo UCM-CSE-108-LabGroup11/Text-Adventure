@@ -65,7 +65,11 @@ class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chatid = db.Column(db.Integer, db.ForeignKey("chats.id"))
     name = db.Column(db.String(64))
+    health = db.Column(db.Integer, default=100)
+    mana = db.Column(db.Integer, default=50)
+    strength = db.Column(db.Integer, default=10)
     char_class = db.Column(db.String(64))
+    level = db.Column(db.Integer, default=1)
     backstory = db.Column(db.Text)
 
 class Message(db.Model):

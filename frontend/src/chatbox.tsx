@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Link, useParams, useLocation } from "react-router-dom";
+import CharacterSheet from "./CharacterSheet";
+
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {
@@ -29,6 +31,9 @@ export default function ChatBox() {
   const [provider, setProvider] = useState("openai");
   // Whether we're currently waiting for the DM to respond
   const [loading, setLoading] = useState(false);
+
+  const [character, setCharacter] = useState<any>(null);
+  const [showSheet, setShowSheet] = useState(false);
 
   const { chatId } = useParams<{ chatId: string }>();
   const location = useLocation();
@@ -89,6 +94,21 @@ export default function ChatBox() {
   useEffect(() => {
     chatBoxRef.current?.scrollTo({ top: chatBoxRef.current.scrollHeight, behavior: "smooth" });
   }, [chat]);
+
+  useEffect(() => {
+    const fetchCharacter = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/v1/character?chatid=${chatId}`);
+        const data = await res.json();
+        setCharacter(data.character);
+      } catch (err) {
+        console.error("Failed to load character", err);
+      }
+    };
+  
+    fetchCharacter();
+  }, [chatId]);
+
 
   return (
     <motion.div
@@ -151,6 +171,17 @@ export default function ChatBox() {
           Send
         </Button>
       </div>
+
+      <div className="mt-4">
+      <Button onClick={() => setShowSheet(!showSheet)} variant="outline" size="sm">
+        {showSheet ? "Hide" : "Show"} Character Sheet
+      </Button>
+      {showSheet && character && (
+        <div className="mt-2">
+          <CharacterSheet character={character} />
+        </div>
+      )}
+    </div>
     </motion.div>
   );
 }
