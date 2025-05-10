@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import CharacterModal from "./CharacterModal";
 
 // TODO: Replace with real API call once backend is live
 async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string) {
@@ -22,12 +23,17 @@ async function createNewChat(name: string, ruleMode: string, theme: string, cust
   return data;
 }
 
+
+
 export default function WorldSelect() {
   const [newName, setNewName] = useState("");
   const [ruleMode, setRuleMode] = useState("narrative");
   const [theme, setTheme] = useState("default");
   const [customTheme, setCustomTheme] = useState("");
   const navigate = useNavigate();
+  const [showCharacterModal, setShowCharacterModal] = useState(false);
+  const [pendingChat, setPendingChat] = useState<any>(null); // store newChat
+
 
   // TODO: Replace with real chat list (from DB or API)
   const [existingChats, setExistingChats] = useState([
@@ -41,14 +47,36 @@ export default function WorldSelect() {
 
     try {
       const newChat = await createNewChat(newName, ruleMode, theme, customTheme);
+      setPendingChat(newChat); // Store for later
+      setShowCharacterModal(true); // Show modal
       // TODO: Redirect with proper chat ID for later retrieval
-      navigate(`/Play/${newChat.id}`, {
-        state: { intro: newChat.intro }
-      });
     } catch (err) {
       console.error("Failed to create world:", err);
     }
   };
+
+// When the user submits their character from the modal
+const handleCharacterSubmit = async (character: any) => {
+  try {
+    // Send the character info to the backend, linked to this chat ID
+    await fetch("http://localhost:5000/api/v1/character", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...character,            // name, charClass, backstory
+        chatid: pendingChat.id,  // tie it to the right game
+      }),
+    });
+
+    // Once it's saved, jump into the chat with the intro message
+    navigate(`/Play/${pendingChat.id}`, {
+      state: { intro: pendingChat.intro },
+    });
+  } catch (err) {
+    // if something went wrong log it
+    console.error("Character creation failed", err);
+  }
+};
 
   // This function selects the pre-created room and navigates to play it
   const handleSelect = (chatId: number) => {
@@ -121,6 +149,8 @@ export default function WorldSelect() {
       <Button onClick={handleCreate} className="mt-3 w-full">
         Create and Start
       </Button>
+
+      {showCharacterModal && (<CharacterModal onSubmit={handleCharacterSubmit} />)}
     </div>
   );
 }

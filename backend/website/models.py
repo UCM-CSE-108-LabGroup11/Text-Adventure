@@ -61,6 +61,13 @@ class Chat(db.Model):
     theme = db.Column(db.String(64), default="default")
     custom_theme = db.Column(db.Text, nullable=True)
 
+class Character(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chatid = db.Column(db.Integer, db.ForeignKey("chats.id"))
+    name = db.Column(db.String(64))
+    char_class = db.Column(db.String(64))
+    backstory = db.Column(db.Text)
+
 class Message(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
