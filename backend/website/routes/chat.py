@@ -302,6 +302,7 @@ def chat():
         history.append({"role": role, "content": text})
 
     # Add the user's latest message
+    history.append({"role": "system", "content": f"The player's current health is {character.health}."})
     history.append({"role": "user", "content": message})
 
     # Optional: content moderation for OpenAI

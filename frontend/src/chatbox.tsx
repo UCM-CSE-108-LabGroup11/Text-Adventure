@@ -182,7 +182,7 @@ export default function ChatBox() {
                 }
 
                 const rollMatch = mainContent.match(/roll\s+(\w+)/i);
-                if (rollMatch) {
+                if (rollMatch && buttons.length === 0) {
                   const stat = rollMatch[1];
                   buttons.unshift(`Roll ${stat.charAt(0).toUpperCase() + stat.slice(1)}`);
                 }
