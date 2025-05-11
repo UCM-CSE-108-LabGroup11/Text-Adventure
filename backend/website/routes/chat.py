@@ -32,129 +32,135 @@ RULE_MODE_SYSTEM_PROMPTS = {
 
 @chat_bp.route("/chat", methods=["POST"])
 def chat():
-    # Extracts the data from POST request
+    # Grab the stuff the frontend sent us
     data = request.json
-    username = data.get("username", "Unknown")  # default is set to Unknown
-    message = data.get("message", "")
-    message = message.strip().replace("“", "\"").replace("”", "\"").replace("‘", "'").replace("’", "'")
+    username = data.get("username", "Unknown")
+    message = data.get("message", "").strip()
 
-    # Checks to see if any jailbreak happening 
+    # Clean up any quotes from pasted text
+    message = message.replace("“", "\"").replace("”", "\"").replace("‘", "'").replace("’", "'")
+
+    # Block common jailbreak stuff
     blocked_keywords = ["ignore previous", "you are an ai", "act as", "system prompt", "repeat the prompt"]
-    lowered = message.lower()
-
-    if any(phrase in lowered for phrase in blocked_keywords):
+    if any(phrase in message.lower() for phrase in blocked_keywords):
         return jsonify({"error": "Message contains restricted language."}), 400
 
     chat_id = data.get("chatId")
-    api_key = data.get("apiKey")  # optional per-user API key
+    api_key = data.get("apiKey")
     provider = data.get("provider", "openai")
 
-    # Only support OpenAI for now (will change if we want to add the Bring-your-own-key rule and there's time)
+    # We only support OpenAI for now
     if provider != "openai":
         return jsonify({"error": "Only OpenAI supported for now."})
 
-    # Use user's API key if provided otherwise fall back to default
+    # Use their API key if they gave one, otherwise use default
     openai.api_key = api_key or os.getenv("OPENAI_API_KEY")
 
-    # Get the chat from DB
-    from website.models import Chat, Message, Variant, Character
+    # Grab the chat and character from DB
+    from website.models import Chat, Message, Variant, Character, User
+    from website import db
+
     chat = Chat.query.get(chat_id)
     if not chat:
         return jsonify({"error": "Chat not found."}), 404
 
-    # Get dynamic rule-based system prompt
-    rule_prompt = RULE_MODE_SYSTEM_PROMPTS.get(chat.rule_mode, RULE_MODE_SYSTEM_PROMPTS["narrative"])
-    history = [{"role": "system", "content": rule_prompt}]
+    character = Character.query.filter_by(chatid=chat_id).first()
 
-    # Tell GPT how to narrate XP gains in the story
-    xp_instructions = (
-        "As the Dungeon Master, always include a line at the end when XP is earned. "
-        "Use this exact format: '[Player name] gains [number] XP for [reason]'. "
-        "Example: 'Alvin gains 50 XP for defeating the goblins.' "
-        "Do not skip this line if XP should be awarded. Always include it exactly like that."
-    )
-    history.append({"role": "system", "content": xp_instructions})
+    # Stop the player from acting if they're KO’d
+    if character and character.health == 0:
+        return jsonify({
+            "reply": f"{character.name} is unconscious and can't act. You'll need to rest or wait for help."
+        }), 200
 
-    engagement_prompt = (
-    "Keep your replies immersive but well-paced. Break longer scenes into short paragraphs. "
-    "Add spacing between moments of action, description, and internal reflection. "
-    "Use dialogue or character thoughts when appropriate. Avoid giant walls of text. "
-    "Always end with a natural player prompt, question, or choice — never leave the player without direction."
-    )
-    history.append({"role": "system", "content": engagement_prompt})
+    # Build the GPT message history
+    history = []
 
+    # Core DM behavior: in-character, immersive
+    history.append({"role": "system", "content": RULE_MODE_SYSTEM_PROMPTS.get(chat.rule_mode, RULE_MODE_SYSTEM_PROMPTS["narrative"])})
 
-    dm_difficulty_prompt = (
-    "As the Dungeon Master, do not protect the player from danger or failure. "
-    "Make the world feel alive and reactive. Good choices lead to rewards. Bad choices should have consequences. "
-    "If the player charges into danger without thinking, they might take damage or fail. "
-    "Always include stakes. You’re not here to coddle them — you’re here to challenge them."
-    )
-    history.append({"role": "system", "content": dm_difficulty_prompt})
+    # so gpt know how to give XP
+    history.append({"role": "system", "content":
+        "After major actions like fights or smart moves, end the message with this exact format:\n"
+        "'[Name] gains [XP] XP for [reason].'\n"
+        "Example: 'Milo gains 50 XP for defeating the goblins.'"
+    })
 
-    # Inject character info (if any) as part of the system context
-    # Add full character description to system context, including stats
-    character = Character.query.filter_by(chatid=chat.id).first()
+    # Style: break up long text, end with a choice or action
+    history.append({"role": "system", "content":
+        "Keep the story vivid but not overwhelming. Break big blocks into smaller ones. "
+        "Use some spacing, maybe character thoughts, or internal reflections. "
+        "ALWAYS end with a choice or natural follow-up. Don’t leave the player stuck."
+    })
+
+    # Make sure stuff has impact 
+    history.append({"role": "system", "content":
+        "The world should push back. If the player makes risky choices, they might get hurt. "
+        "Make danger real. Don’t protect them unless they earn it. Choices have consequences!"
+    })
+
+    history.append({"role": "system", "content": 
+        "When the player takes damage, include a clear line like: '[Name] takes [X] damage.' "
+        "This lets the system apply it. Don’t skip it if damage happens."    
+    })
+
+    # Inject character info
     if character:
-        char_desc = (
+        history.append({"role": "system", "content":
             f"Player character: Name = {character.name}, Class = {character.char_class}, "
             f"Backstory = {character.backstory or 'none'}, "
             f"Stats: Health = {character.health}, Mana = {character.mana}, Strength = {character.strength}, "
             f"Level = {character.level}."
-        )
-        history.append({"role": "system", "content": char_desc})
-        # Get the 10 most recent messages for the chat, newest first
-        recent_messages_query = (
-            Message.query
-            .filter_by(chatid=chat_id)
-            .order_by(Message.id.desc())
-            .limit(10)
-        )
+        })
 
-    # Reverse them so they appear in chronological context
-    recent_messages = list(reversed(recent_messages_query.all()))
-
-    for msg in recent_messages:
-        # For now, just take first variant
-        variant = msg.variants[0].text if msg.variants else ""
+    # Grab recent messages so GPT has context
+    recent_messages = (
+        Message.query
+        .filter_by(chatid=chat_id)
+        .order_by(Message.id.desc())
+        .limit(10)
+        .all()
+    )
+    for msg in reversed(recent_messages):
+        text = msg.variants[0].text if msg.variants else ""
         role = "user" if msg.user and msg.user.username == username else "assistant"
-        history.append({"role": role, "content": variant})
+        history.append({"role": role, "content": text})
 
-    # Append the new user message to the conversation
+    # Add the user's latest message
     history.append({"role": "user", "content": message})
 
-    # Run OpenAI moderation check on user message (If were using other LLM's we need to change this, buh)
+    # Optional: content moderation for OpenAI
     try:
-        moderation_response = openai.Moderation.create(input=message)
-        if moderation_response["results"][0]["flagged"]:
-            print("[MODERATION WARNING] Flagged message:", message)
+        moderation = openai.Moderation.create(input=message)
+        if moderation["results"][0]["flagged"]:
+            print("[MODERATION WARNING] Message flagged:", message)
     except Exception as e:
-        print("[MODERATION ERROR]", e)
+        print("[MODERATION CHECK FAILED]", e)
 
+    # Debug: print what GPT sees
     print("\n--- GPT History ---")
     for h in history:
         print(f"{h['role'].upper()}: {h['content']}")
     print("-------------------\n")
 
-    # Call OpenAI
+    # Ask GPT to continue the story
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=history,
-            temperature=0.8,
+            temperature=0.85,
         )
         reply = response.choices[0].message.content.strip()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # Look for XP gain in the GPT reply
-    xp_match = re.search(r"gains\s+(\d+)\s+xp", reply, re.IGNORECASE)
+    # Check for XP in the reply using a pattern
+    xp_match = re.search(r"(\w+)\s+gains\s+(\d+)\s+XP", reply, re.IGNORECASE)
     if xp_match and character:
-        xp_amount = int(xp_match.group(1))
-        character.xp += xp_amount
-
-        # check for level-up
+        gained_xp = int(xp_match.group(2))
+        character.xp += gained_xp
         leveled_up = False
+
+        # Check if they level up
         while character.xp >= character.level * 100:
             character.xp -= character.level * 100
             character.level += 1
@@ -163,26 +169,36 @@ def chat():
             character.strength += 1
             leveled_up = True
 
-        print(f"[XP] {character.name} gains {xp_amount} XP" + (" and leveled up!" if leveled_up else ""))
-        from website import db
+        db.session.commit()
+        print(f"[XP] {character.name} gained {gained_xp} XP" + (" and leveled up!" if leveled_up else ""))
+
+    # Check for damage in the response
+    dmg_match = re.search(r"takes\s+(\d+)\s+damage", reply, re.IGNORECASE)
+    if dmg_match and character:
+        dmg = int(dmg_match.group(1))
+        character.health = max(character.health - dmg, 0)  # don’t go below 0
+        print(f"[DAMAGE] {character.name} takes {dmg} damage. Health now {character.health}")
+
+        # KO handling if health hits 0
+        if character.health == 0:
+            print(f"[KO] {character.name} has been knocked out!")
+            reply += f"\n\n{character.name} has been knocked out! You fall unconscious as the world fades to black..."
+
         db.session.commit()
 
-    # Save user message
-    from website.models import User
-    from website import db
-    user = User.query.filter_by(username="Player1").first() # TODO: Change this when we implement login/authentication
+    # Save what the user said
+    user = User.query.filter_by(username="Player1").first()
     user_msg = Message(chatid=chat.id, user=user)
     db.session.add(user_msg)
-    db.session.flush()  # get ID
-
+    db.session.flush()
     db.session.add(Variant(messageid=user_msg.id, text=message))
 
-    # Save assistant reply
+    # Save what the AI said
     ai_msg = Message(chatid=chat.id, user=None)
     db.session.add(ai_msg)
     db.session.flush()
-
     db.session.add(Variant(messageid=ai_msg.id, text=reply))
+
     db.session.commit()
 
     return jsonify({"reply": reply})
