@@ -103,6 +103,19 @@ def chat():
         "This lets the system apply it. Don’t skip it if damage happens."    
     })
 
+    # Let DM handle vague inputs smartly
+    history.append({"role": "system", "content":
+        "If the player's action is vague, try to infer what they mean based on recent context. "
+        "If you're not sure what kind of action they intend (e.g. 'attack'), ask them to clarify. "
+        "Example: 'Do you want to attack with your sword, cast a spell, or something else?'"
+    })
+
+    # Let the player set a default attack style
+    history.append({"role": "system", "content":
+        "If the player has previously described how they usually fight (e.g., sword, bow, spells), assume that as their default action style "
+        "unless they say otherwise. This keeps things moving. If you’re ever unsure, ask them to clarify."
+    })
+
     # Inject character info
     if character:
         history.append({"role": "system", "content":
@@ -177,6 +190,7 @@ def chat():
     if dmg_match and character:
         dmg = int(dmg_match.group(1))
         character.health = max(character.health - dmg, 0)  # don’t go below 0
+
         print(f"[DAMAGE] {character.name} takes {dmg} damage. Health now {character.health}")
 
         # KO handling if health hits 0
@@ -201,4 +215,7 @@ def chat():
 
     db.session.commit()
 
-    return jsonify({"reply": reply})
+    return jsonify({
+        "reply": reply,
+        "ko": character.health == 0 if character else False
+    })

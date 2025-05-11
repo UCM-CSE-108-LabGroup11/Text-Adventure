@@ -69,6 +69,7 @@ class Character(db.Model):
     mana = db.Column(db.Integer, default=50)
     strength = db.Column(db.Integer, default=10)
     char_class = db.Column(db.String(64))
+    is_ko = db.Column(db.Boolean, default=False)
     xp = db.Column(db.Integer, default=0)
     level = db.Column(db.Integer, default=1)
     backstory = db.Column(db.Text)

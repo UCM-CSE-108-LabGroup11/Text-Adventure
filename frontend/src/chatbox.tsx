@@ -30,6 +30,8 @@ export default function ChatBox() {
   const [provider, setProvider] = useState("openai");
   // Whether we're currently waiting for the DM to respond
   const [loading, setLoading] = useState(false);
+  // Tracks if the player has been knocked out
+  const [isKO, setIsKO] = useState(false);
 
   const [character, setCharacter] = useState<any>(null);
 
@@ -42,7 +44,7 @@ export default function ChatBox() {
 
   // Handles sending a message to the backend API
   const sendMessage = async () => {
-    if (!input.trim()) return; // prevent sending empty messages
+    if (!input.trim() || isKO) return; // don't send if empty or KO'd
 
     const userText = input;
     setChat((prev) => [...prev, `You: ${userText}`]); // instantly show user input
@@ -58,18 +60,25 @@ export default function ChatBox() {
           username: "Player1", // TODO: replace with logged-in user's username
           message: userText,
           provider,
-          chatId, 
+          chatId,
         }),
       });
 
       const data = await res.json();
 
-      // Append DM's reply to chat log
+      // Add the DM's response to chat
       if (data.reply) {
         setChat((prev) => [...prev, `DM: ${data.reply}`]);
       } else {
         setChat((prev) => [...prev, `Error: ${data.error || "Unknown error"}`]);
       }
+
+      // If the backend says player is knocked out, show that and block input
+      if (data.ko) {
+        setIsKO(true);
+        setChat((prev) => [...prev, "💀 You have been knocked out. Game over."]);
+      }
+
     } catch {
       // Network failure or server error
       setChat((prev) => [...prev, "Network error"]);
@@ -83,7 +92,7 @@ export default function ChatBox() {
       const timeout = setTimeout(() => {
         setChat([`DM: ${intro}`]);
       }, 1500); // 1 second delay before showing intro
-  
+
       return () => clearTimeout(timeout); // cleanup on unmount
     }
   }, [intro]);
@@ -100,6 +109,12 @@ export default function ChatBox() {
         const res = await fetch(`http://localhost:5000/api/v1/character?chatid=${chatId}`);
         const data = await res.json();
         setCharacter(data.character);
+
+        // If character has been knocked out on load, disable chat
+        if (data.character?.health === 0) {
+          setIsKO(true);
+        }
+
       } catch (err) {
         console.error("Failed to load character", err);
       }
@@ -171,13 +186,14 @@ export default function ChatBox() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="What do you do?"
+                placeholder={isKO ? "You're unconscious..." : "What do you do?"}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 className="flex-1 px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                disabled={isKO}
               />
-              <Button onClick={sendMessage} className="px-4 py-2" disabled={loading}>
+              <Button onClick={sendMessage} className="px-4 py-2" disabled={loading || isKO}>
                 Send
               </Button>
             </div>
