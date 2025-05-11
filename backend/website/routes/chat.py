@@ -92,6 +92,17 @@ def chat():
         "ALWAYS end with a choice or natural follow-up. Don’t leave the player stuck."
     })
 
+
+    history.append({"role": "system", "content":
+        "End every message with 2-4 numbered or bullet choices like this:\n"
+        "---\n"
+        "- Attack\n"
+        "- Cast a spell\n"
+        "- Flee\n"
+        "---\n"
+        "Only use this format once per message. These will be turned into buttons."
+    })
+
     # Make sure stuff has impact 
     history.append({"role": "system", "content":
         "The world should push back. If the player makes risky choices, they might get hurt. "

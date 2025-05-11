@@ -153,20 +153,70 @@ export default function ChatBox() {
                 const isUser = line.startsWith("You:");
                 const content = line.replace(/^You:\s?|^DM:\s?/, "");
 
+                // Try to extract GPT button choices
+                let buttons: string[] = [];
+                let mainContent = content;
+
+                const fullDelim = content.match(/---\s*([\s\S]*?)\s*---/);
+                if (fullDelim) {
+                  buttons = fullDelim[1]
+                    .split(/\r?\n/)
+                    .map((l) => l.replace(/^[-*]\s*/, "").trim())
+                    .filter(Boolean);
+                  mainContent = content.replace(fullDelim[0], "").trim();
+                } else {
+                  const linesArr = content.split(/\r?\n/);
+                  const idx = linesArr.findIndex((l) => l.startsWith("- "));
+                  if (idx !== -1) {
+                    buttons = linesArr
+                      .slice(idx)
+                      .map((l) => l.replace(/^[-*]\s*/, "").trim());
+                    mainContent = linesArr.slice(0, idx).join("\n");
+                  }
+                }
+
                 return (
-                  <motion.div
+                  <div
                     key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className={`max-w-[75%] px-4 py-2 rounded-lg text-sm shadow ${
-                      isUser
-                        ? "self-end bg-blue-500 text-white"
-                        : "self-start bg-gray-200 text-black"
-                    }`}
+                    className={`flex flex-col ${
+                      isUser ? "items-end" : "items-start"
+                    } gap-1`}
                   >
-                    {content}
-                  </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className={`max-w-[75%] px-4 py-2 rounded-lg text-sm shadow ${
+                        isUser
+                          ? "bg-blue-500 text-white self-end rounded-br-none"
+                          : "bg-gray-200 text-black self-start rounded-bl-none"
+                      }`}
+                    >
+                      {mainContent.split("\n").map((p, pi) => (
+                        <p key={pi}>{p}</p>
+                      ))}
+                    </motion.div>
+
+                    {/* GPT-generated choices rendered as buttons */}
+                    {!isUser && buttons.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {buttons.map((b, idx2) => (
+                          <Button
+                            key={idx2}
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full px-3 py-1 text-xs bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition"
+                            onClick={() => {
+                              setInput(b); // fill input
+                              setTimeout(() => sendMessage(), 100); // auto-send
+                            }}
+                          >
+                            {b}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
 
