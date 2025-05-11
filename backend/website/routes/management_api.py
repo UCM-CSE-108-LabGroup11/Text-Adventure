@@ -226,23 +226,30 @@ def create_chat():
 
     # Append theme-based intro prompt
     theme_description = custom_theme if theme == "custom" else theme.replace("-", " ")
-    intro_prompt = (
-        f"Begin the game with a short, vivid description of a scene inspired by: {theme_description}. "
-        "Drop the player directly into the action. Keep it under 4 sentences and end on a moment of tension or danger.\n\n"
-        "Then, include a `---` block with 2 to 4 action choices the player can take. **Each choice must start with 'Roll [Stat] to...'** "
-        "Never phrase choices as simple actions like 'Run' or 'Draw your weapon'.\n\n"
-        "❌ Wrong:\n"
-        "- Draw your sword\n"
-        "- Try to dodge\n"
-        "✅ Correct:\n"
-        "- Roll Strength to draw your sword and brace for combat\n"
-        "- Roll Dexterity to dodge the incoming strike\n\n"
-        "Always follow this format:\n"
-        "---\n"
-        "- Roll [Stat] to [Action]\n"
-        "- Roll [Stat] to [Action]\n"
-        "---"
-    )
+    if rule_mode == "rules-lite":
+        intro_prompt = (
+            f"Begin the game with a short, vivid description of a scene inspired by: {theme_description}. "
+            "Drop the player directly into the action. Keep it under 4 sentences and end on a moment of tension or danger.\n\n"
+            "Then, include a `---` block with 2 to 4 action choices the player can take. **Each choice must start with 'Roll [Stat] to...'** "
+            "Never phrase choices as simple actions like 'Run' or 'Draw your weapon'.\n\n"
+            "❌ Wrong:\n"
+            "- Draw your sword\n"
+            "- Try to dodge\n"
+            "✅ Correct:\n"
+            "- Roll Strength to draw your sword and brace for combat\n"
+            "- Roll Dexterity to dodge the incoming strike\n\n"
+            "Always follow this format:\n"
+            "---\n"
+            "- Roll [Stat] to [Action]\n"
+            "- Roll [Stat] to [Action]\n"
+            "---"
+        )
+    else:
+        intro_prompt = (
+            "Begin the game with a vivid situation.\n"
+            "Then include a `---` block with 2–4 narrative choices (e.g. 'Run for cover', 'Call out to the stranger').\n"
+            "Do not include dice rolls or stat-based phrasing.\n"
+        )
     history.append({"role": "user", "content": intro_prompt})
 
     # Generate GPT intro
