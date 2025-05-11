@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, useLocation } from "react-router-dom";
 import CharacterSheet from "./CharacterSheet";
 
@@ -42,14 +42,17 @@ export default function ChatBox() {
   // Ref to scroll the chat window down as new messages come in
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
+  const isRollResult = (text: string) =>
+    /^Rolling: Roll:/i.test(text) || /^You rolled a \d+/i.test(text);
+
   // Handles sending a message to the backend API
   const sendMessage = async () => {
-    if (!input.trim() || isKO) return; // don't send if empty or KO'd
+    if (!input.trim() || isKO) return;
 
     const userText = input;
-    setChat((prev) => [...prev, `You: ${userText}`]); // instantly show user input
-    setInput(""); // clear the input box
-    setLoading(true); // show loading state
+    setChat((prev) => [...prev, `You: ${userText}`]);
+    setInput("");
+    setLoading(true);
 
     try {
       // Send POST request to backend
@@ -57,7 +60,7 @@ export default function ChatBox() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: "Player1", // TODO: replace with logged-in user's username
+          username: "Player1",
           message: userText,
           provider,
           chatId,
@@ -73,6 +76,7 @@ export default function ChatBox() {
         setChat((prev) => [...prev, `Error: ${data.error || "Unknown error"}`]);
       }
 
+      console.log(data.reply)
       // If the backend says player is knocked out, show that and block input
       if (data.ko) {
         setIsKO(true);
@@ -91,9 +95,8 @@ export default function ChatBox() {
     if (intro) {
       const timeout = setTimeout(() => {
         setChat([`DM: ${intro}`]);
-      }, 1500); // 1 second delay before showing intro
-
-      return () => clearTimeout(timeout); // cleanup on unmount
+      }, 1500);
+      return () => clearTimeout(timeout);
     }
   }, [intro]);
 
@@ -109,19 +112,24 @@ export default function ChatBox() {
         const res = await fetch(`http://localhost:5000/api/v1/character?chatid=${chatId}`);
         const data = await res.json();
         setCharacter(data.character);
-
-        // If character has been knocked out on load, disable chat
-        if (data.character?.health === 0) {
-          setIsKO(true);
-        }
-
+        if (data.character?.health === 0) setIsKO(true);
       } catch (err) {
         console.error("Failed to load character", err);
       }
     };
 
     fetchCharacter();
-  }, [chat]); // refresh on every chat update
+  }, [chat]);
+
+  // Determine the last DM message index with buttons
+  let lastButtonsIndex = -1;
+  chat.forEach((line, idx) => {
+    if (!line.startsWith("DM:")) return;
+    const content = line.replace(/^DM:\s?/, "");
+    if (content.includes("---") || content.split(/\r?\n/).some((l) => l.startsWith("- "))) {
+      lastButtonsIndex = idx;
+    }
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground px-4 py-8">
@@ -150,7 +158,7 @@ export default function ChatBox() {
               className="bg-card border rounded p-4 h-96 overflow-y-auto mb-4 shadow-inner flex flex-col gap-2"
             >
               {chat.map((line, i) => {
-                const isUser = line.startsWith("You:");
+                const isUser = line.startsWith("You:") || isRollResult(line);
                 const content = line.replace(/^You:\s?|^DM:\s?/, "");
 
                 // Try to extract GPT button choices
@@ -168,26 +176,27 @@ export default function ChatBox() {
                   const linesArr = content.split(/\r?\n/);
                   const idx = linesArr.findIndex((l) => l.startsWith("- "));
                   if (idx !== -1) {
-                    buttons = linesArr
-                      .slice(idx)
-                      .map((l) => l.replace(/^[-*]\s*/, "").trim());
+                    buttons = linesArr.slice(idx).map((l) => l.replace(/^[-*]\s*/, "").trim());
                     mainContent = linesArr.slice(0, idx).join("\n");
                   }
                 }
 
+                const rollMatch = mainContent.match(/roll\s+(\w+)/i);
+                if (rollMatch) {
+                  const stat = rollMatch[1];
+                  buttons.unshift(`Roll ${stat.charAt(0).toUpperCase() + stat.slice(1)}`);
+                }
+
                 return (
-                  <div
-                    key={i}
-                    className={`flex flex-col ${
-                      isUser ? "items-end" : "items-start"
-                    } gap-1`}
-                  >
+                  <div key={i} className={`flex flex-col ${isUser ? "items-end" : "items-start"} gap-1`}>
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}
                       className={`max-w-[75%] px-4 py-2 rounded-lg text-sm shadow ${
-                        isUser
+                        isRollResult(line)
+                          ? "bg-yellow-100 text-yellow-900 font-semibold border border-yellow-300"
+                          : isUser
                           ? "bg-blue-500 text-white self-end rounded-br-none"
                           : "bg-gray-200 text-black self-start rounded-bl-none"
                       }`}
@@ -197,25 +206,88 @@ export default function ChatBox() {
                       ))}
                     </motion.div>
 
-                    {/* GPT-generated choices rendered as buttons */}
-                    {!isUser && buttons.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {buttons.map((b, idx2) => (
-                          <Button
-                            key={idx2}
-                            variant="outline"
-                            size="sm"
-                            className="rounded-full px-3 py-1 text-xs bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition"
-                            onClick={() => {
-                              setInput(b); // fill input
-                              setTimeout(() => sendMessage(), 100); // auto-send
-                            }}
-                          >
-                            {b}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
+                    {/* GPT-generated choices rendered as buttons with fade transition */}
+                    <AnimatePresence>
+                      {!isUser && i === lastButtonsIndex && buttons.length > 0 && (
+                        <motion.div
+                          key={`buttons-${i}`}
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                          transition={{ duration: 0.3 }}
+                          className="flex flex-wrap gap-2 mt-1"
+                        >
+                          {buttons.map((b, idx2) => (
+                            <Button
+                              key={idx2}
+                              variant="outline"
+                              size="sm"
+                              className="cursor-pointer rounded-full px-3 py-1 text-xs bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition"
+                              onClick={async () => {
+                                const statMatch = b.toLowerCase().match(/roll (.+)/);
+                                const stat = statMatch?.[1]?.toLowerCase();
+                                if (stat) {
+                                  setLoading(true);
+                                  try {
+                                    const rollRes = await fetch("http://localhost:5000/api/v1/roll", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ stat, chatId }),
+                                    });
+
+                                    const rollData = await rollRes.json();
+                                    const { total, breakdown } = rollData;
+
+                                    setChat((prev) => [
+                                      ...prev,
+                                      `Rolling: ${breakdown}`,
+                                      `You rolled a ${total} on ${stat}`,
+                                    ]);
+
+                                    const res2 = await fetch("http://localhost:5000/api/v1/chat", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        username: "Player1",
+                                        action: `Rolled ${total} on ${stat}`,
+                                        chatId,
+                                      }),
+                                    });
+
+                                    const data2 = await res2.json();
+                                    if (data2.reply) {
+                                      setChat((prev) => [...prev, `DM: ${data2.reply}`]);
+                                      try {
+                                        const res = await fetch(`http://localhost:5000/api/v1/character?chatid=${chatId}`);
+                                        const data = await res.json();
+                                        setCharacter(data.character);
+                                      } catch (err) {
+                                        console.error("Failed to refresh character stats", err);
+                                      }
+                                      console.log("Button reply:", data2.reply);
+                                    }
+                                    if (data2.ko) {
+                                      setIsKO(true);
+                                      setChat((prev) => [...prev, "You have been knocked out. Game over."]);
+                                    }
+                                  } catch (err) {
+                                    setChat((prev) => [...prev, "Roll failed"]);
+                                    console.error(err);
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                } else {
+                                  setInput(b);
+                                  setTimeout(() => sendMessage(), 100);
+                                }
+                              }}
+                            >
+                              {b}
+                            </Button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 );
               })}

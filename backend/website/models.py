@@ -66,7 +66,7 @@ class Character(db.Model):
     chatid = db.Column(db.Integer, db.ForeignKey("chats.id"))
     name = db.Column(db.String(64))
     health = db.Column(db.Integer, default=100)
-    mana = db.Column(db.Integer, default=50)
+    spell_power = db.Column(db.Integer, default=10)
     strength = db.Column(db.Integer, default=10)
     char_class = db.Column(db.String(64))
     is_ko = db.Column(db.Boolean, default=False)

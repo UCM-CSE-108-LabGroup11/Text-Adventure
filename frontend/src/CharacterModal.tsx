@@ -2,12 +2,19 @@ import { useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { Button } from "@/components/ui/button";
 
-export default function CharacterModal({ onSubmit }: { onSubmit: (char: any) => void }) {
+interface CharacterModalProps {
+  onSubmit: (char: any) => void;
+  theme: string; // <-- add this line
+}
+
+
+export default function CharacterModal({ onSubmit, theme }: CharacterModalProps) {
   const [name, setName] = useState("");
   const [charClass, setCharClass] = useState("");
   const [backstory, setBackstory] = useState("");
 
   const isValid = name.trim() && charClass.trim();
+ 
 
   return (
     <Dialog open={true} onClose={() => {}} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

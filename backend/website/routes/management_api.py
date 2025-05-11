@@ -40,7 +40,25 @@ def create_character():
         return jsonify({"error": "Chat not found"}), 404
 
     # create or update character
-    char = Character(chatid=chatid, name=name, char_class=char_class, backstory=backstory)
+    if char_class.lower() == "mage":
+        char = Character(
+            chatid=chatid,
+            name=name,
+            char_class=char_class,
+            backstory=backstory,
+            spell_power=12,
+            strength=0,
+        )
+    else:
+        char = Character(
+            chatid=chatid,
+            name=name,
+            char_class=char_class,
+            backstory=backstory,
+            spell_power=0,
+            strength=10,
+        )
+
     db.session.add(char)
     db.session.commit()
 
@@ -53,7 +71,9 @@ def create_character():
         "char_class": char.char_class,
         "backstory": char.backstory,
         "xp": char.xp,
-        "level": char.level
+        "level": char.level,
+        "strength": char.strength,
+        "spell_power": char.spell_power,    
       }
     }), 201
 
@@ -77,10 +97,10 @@ def get_character():
             "char_class": char.char_class,
             "backstory": char.backstory,
             "health": char.health,
-            "mana": char.mana,
             "level": char.level,
             "xp": char.xp,
             "strength": char.strength,
+            "spell_power": char.spell_power, 
         }
     }), 200
 
@@ -113,8 +133,10 @@ def gain_xp():
         char.xp -= char.level * 100
         char.level += 1
         char.health += 10
-        char.mana += 5
-        char.strength += 1
+        if char.char_class.lower() == "mage":
+            char.spell_power += 1
+        else:
+            char.strength += 1
         leveled_up = True
 
     # save the changes
@@ -127,7 +149,6 @@ def gain_xp():
             "level": char.level,
             "xp": char.xp,
             "health": char.health,
-            "mana": char.mana,
             "strength": char.strength,
         }
     }), 200
@@ -153,8 +174,10 @@ def level_up():
     # Level them up and boost their stats
     char.level += 1
     char.health += 10
-    char.mana += 5
-    char.strength += 1
+    if char.char_class.lower() == "mage":
+      char.spell_power += 1
+    else:
+      char.strength   += 1
 
     # Save it to the database
     db.session.commit()
@@ -170,8 +193,8 @@ def level_up():
             "backstory": char.backstory,
             "level": char.level,
             "health": char.health,
-            "mana": char.mana,
             "strength": char.strength,
+            "spell_power": char.spell_power,  # ← and return it here too
         }
     }), 200
 
@@ -204,9 +227,21 @@ def create_chat():
     # Append theme-based intro prompt
     theme_description = custom_theme if theme == "custom" else theme.replace("-", " ")
     intro_prompt = (
-    f"Begin the game with a short, vivid description of a scene inspired by: {theme_description}. "
-    "Keep it under 4 sentences. Make it immersive, but end with a subtle hook or point of tension. "
-    "Do not explain the setting — drop the player directly into it. Avoid exposition or world history."
+        f"Begin the game with a short, vivid description of a scene inspired by: {theme_description}. "
+        "Drop the player directly into the action. Keep it under 4 sentences and end on a moment of tension or danger.\n\n"
+        "Then, include a `---` block with 2 to 4 action choices the player can take. **Each choice must start with 'Roll [Stat] to...'** "
+        "Never phrase choices as simple actions like 'Run' or 'Draw your weapon'.\n\n"
+        "❌ Wrong:\n"
+        "- Draw your sword\n"
+        "- Try to dodge\n"
+        "✅ Correct:\n"
+        "- Roll Strength to draw your sword and brace for combat\n"
+        "- Roll Dexterity to dodge the incoming strike\n\n"
+        "Always follow this format:\n"
+        "---\n"
+        "- Roll [Stat] to [Action]\n"
+        "- Roll [Stat] to [Action]\n"
+        "---"
     )
     history.append({"role": "user", "content": intro_prompt})
 

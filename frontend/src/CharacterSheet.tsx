@@ -23,11 +23,14 @@ export default function CharacterSheet({ character }: { character: any }) {
         <div className="mt-4">
           {/* stat bars with rough max values (can tweak later) */}
           {statBar("Health", character.health, 100, "bg-red-500")}
-          {statBar("Mana", character.mana, 50, "bg-blue-500")}
           {statBar("XP", character.xp, character.level * 100, "bg-purple-500")}
   
           {/* basic strength display (no bar for now) */}
-          <p><strong>Strength:</strong> {character.strength}</p>
+          {character.char_class === "Mage" ? (
+        <p><strong>Spell Power:</strong> {character.spell_power}</p>
+        ) : (
+            <p><strong>Strength:</strong> {character.strength}</p>
+        )}
         </div>
       </div>
     );
