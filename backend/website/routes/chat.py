@@ -104,8 +104,8 @@ def roll_stat():
 @jwt_required()
 def chat():
     # authenticate user
-    current_username = get_jwt_identity()
-    user = User.query.filter_by(username=current_username).first()
+    userid = get_jwt_identity()
+    user = User.query.get(userid)
     if(user is None):
         return(jsonify({"message": "Invalid JWT Token."}), 401)
     
