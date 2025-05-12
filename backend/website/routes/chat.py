@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from flask_login import current_user, login_required
 import re, random
+from models import Permission, Chat
 
 
 # Load environment variables from .env file (like your default OpenAI API key)
@@ -60,9 +61,10 @@ def roll_stat():
     data = request.get_json()
     stat = data.get("stat")
     chat_id = data.get("chatId")
+    user_id = data.get("userId")
 
     from website.models import Character
-    char = Character.query.filter_by(chatid=chat_id).first()
+    char = Character.query.filter_by(chatid=chat_id, userid=user_id).first()
     if not char:
         return jsonify({"error": "Character not found"}), 404
 
@@ -97,6 +99,11 @@ def chat():
     chat = Chat.query.get(chat_id)
     if not chat:
         return jsonify({"error": "Chat not found."}), 404
+    
+    chat_permision = Permission.query.filter_by(userid=user.id, chatid=chat.id).first()
+
+    if not (chat_permision):
+        return jsonify({"error": "You do not have permission to access this chat."}), 403
 
     if chat.rule_mode == "rules-lite":
         action = data.get("action")
@@ -126,6 +133,7 @@ def chat():
         return jsonify({"error": "Message contains restricted language."}), 400
 
     chat_id = data.get("chatId")
+    user_id = data.get("userId")
     api_key = data.get("apiKey")
     provider = data.get("provider", "openai")
 
@@ -141,7 +149,7 @@ def chat():
     if not chat:
         return jsonify({"error": "Chat not found."}), 404
 
-    character = Character.query.filter_by(chatid=chat_id).first()
+    character = Character.query.filter_by(chatid=chat_id, userid=user_id).first()
 
     # Stop the player from acting if they're KO’d
     if character and character.health == 0:
@@ -400,7 +408,7 @@ def chat():
         db.session.commit()
 
     # Save what the user said
-    user = User.query.filter_by(username="Player1").first()
+    user = User.query.filter_by(id=user_id).first()
     user_msg = Message(chatid=chat.id, user=user)
     db.session.add(user_msg)
     db.session.flush()
