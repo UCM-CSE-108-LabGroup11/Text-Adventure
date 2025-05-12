@@ -17,16 +17,19 @@ def login():
     username = request.json.get("username", None)
     password = request.json.get("password", None)
 
-    # worry about login later; this is wrong.
+    field_errors = []
     if(username is None or password is None):
         field_errors.append("Username and password are required.")
     
     user = User.query.filter_by(username=username).first()
-    if(not user):
+    if(user is None):
         field_errors.append("No such user.")
 
-    if(not cph(user.password, password)):
+    if(user and not cph(user.password, password)):
         field_errors.append("Invalid password.")
+    
+    if(len(field_errors) > 0):
+        return(jsonify({"message": "Invalid user information.", "field_errors": field_errors}))
     
     access_token = cat(identity=username)
     return(jsonify({"access_token": access_token}))
@@ -83,4 +86,5 @@ def signup():
         db.session.rollback()
         print(e)
         return(jsonify({"message": "A database error occurred."}), 500)
-    return(jsonify({"message": "Account created."}), 201)
+    access_token = cat(identity=username)
+    return(jsonify({"message": "Account created.", "token": access_token}), 201)

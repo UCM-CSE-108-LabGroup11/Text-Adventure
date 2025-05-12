@@ -96,6 +96,7 @@ export default function Signup () {
             }
 
             console.log ("Signup successful:", data);
+            localStorage.setItem ("access_token", data.access_token);
             navigate ("/Login");
         } catch (error) {
             console.error ("Signup request failed:", error);

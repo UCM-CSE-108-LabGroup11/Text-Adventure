@@ -84,7 +84,9 @@ export default function Login () {
             }
 
             console.log ("Login successful:", data);
+            localStorage.setItem ("access_token", data.access_token);
             navigate ("/Play")
+            // window.location.href = "/Play"
         } catch (error) {
             console.error ("Login request failed:", error);
             setFormError ("An error occurred. Please check your connection and try again.");
