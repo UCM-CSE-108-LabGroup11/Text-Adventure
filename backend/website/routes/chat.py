@@ -3,7 +3,8 @@ import openai
 import os
 from dotenv import load_dotenv
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from website.models import User
+from website.models import User, Character, Variant, Message, Chat
+from website import db
 import re, random
 
 
@@ -62,7 +63,6 @@ def roll_stat():
     stat = data.get("stat")
     chat_id = data.get("chatId")
 
-    from website.models import Character
     char = Character.query.filter_by(chatid=chat_id).first()
     if not char:
         return jsonify({"error": "Character not found"}), 404
@@ -79,9 +79,6 @@ def roll_stat():
     else:
         total = roll
         breakdown = f"Roll: [{roll}]"
-
-    from website.models import Message, Variant
-    from website import db
 
     # Save roll as a user message
     roll_text = f"Rolling: {breakdown}\nYou rolled a {total} on {stat}"
@@ -112,8 +109,6 @@ def chat():
     # Grab the stuff the frontend sent us
     data = request.json
     message = data.get("message", "").strip()
-    from website.models import Chat, Message, Variant, Character, User
-    from website import db
 
     chat_id = data.get("chatId")
     chat = Chat.query.get(chat_id)
@@ -349,7 +344,7 @@ def chat():
     )
     for msg in reversed(recent_messages):
         text = msg.variants[0].text if msg.variants else ""
-        role = "user" if msg.user and msg.user.username == username else "assistant"
+        role = "user" if msg.user else "assistant"
         history.append({"role": role, "content": text})
 
     # Add the user's latest message
