@@ -211,6 +211,8 @@ def create_chat():
 
     user_id = get_jwt_identity()
     user = User.query.get(user_id)
+    if(user is None):
+        return(jsonify({"message": "Invalid JWT Token."}), 401)
 
     data = request.get_json()
     name = data.get("name")

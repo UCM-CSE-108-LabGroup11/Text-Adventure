@@ -101,11 +101,16 @@ def roll_stat():
     })
 
 @chat_bp.route("/chat", methods=["POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def chat():
+    # authenticate user
+    userid = get_jwt_identity()
+    user = User.query.get(userid)
+    if(user is None):
+        return(jsonify({"message": "Invalid JWT Token."}), 401)
+    
     # Grab the stuff the frontend sent us
     data = request.json
-    username = data.get("username", "Unknown")
     message = data.get("message", "").strip()
     from website.models import Chat, Message, Variant, Character, User
     from website import db
