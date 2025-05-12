@@ -7,7 +7,6 @@ from flask_cors import CORS
 from flask import Flask
 
 # from .site import main, auth as site_main, site_auth
-from .api import api
 
 import os
 
@@ -33,6 +32,8 @@ def start():
     # app.register_blueprint(site_main)
     # app.register_blueprint(site_auth, url_prefix="/auth")
     from .models import User
+    from .api import api
+    
     app.register_blueprint(api, url_prefix="/api/v1")
 
 

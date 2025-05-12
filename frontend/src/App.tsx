@@ -1,10 +1,18 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import LandingPage from './LandingPage';
-import About from './About';
-import Features from "./Features";
-import WorldSelect from "./Play";
-import ChatBox from "./chatbox";
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+
+// pages
+import LandingPage from '@/pages/LandingPage';
+import About from '@/pages/About';
+import Features from "@/pages/Features";
+import WorldSelect from "@/pages/Play";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup"
+
+// auth
+import PrivateRoute from "@/components/PrivateRoute";
+
+// ...
+import ChatBox from "@/components/chatbox";
 
 function App() {
     return (
@@ -13,8 +21,21 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/About" element={<About />} />
                 <Route path="/Features" element={<Features />} />
-                <Route path="/Play" element={<WorldSelect/>}/>
-                <Route path="/Play/:chatId" element={<ChatBox />} />
+
+                <Route path="/Login" element={<Login />} />
+                <Route path="/Signup" element={<Signup />} />
+                <Route path="*" element={<Navigate to="/Signup" replace />} />
+
+                <Route path="/Play" element={
+                    <PrivateRoute>
+                        <WorldSelect/>
+                    </PrivateRoute>
+                }/>
+                <Route path="/Play/:chatId" element={
+                    <PrivateRoute>
+                        <ChatBox />
+                    </PrivateRoute>
+                } />
             </Routes>
         </Router>
     );
