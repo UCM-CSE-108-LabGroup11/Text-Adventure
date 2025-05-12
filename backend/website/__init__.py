@@ -34,6 +34,8 @@ def start():
     # app.register_blueprint(site_auth, url_prefix="/auth")
     from .models import User
     app.register_blueprint(api, url_prefix="/api/v1")
+    print(app.url_map)
+
 
 
     login_manager = LoginManager()

@@ -79,6 +79,18 @@ def roll_stat():
         total = roll
         breakdown = f"Roll: [{roll}]"
 
+    from website.models import Message, Variant
+    from website import db
+
+    # Save roll as a user message
+    roll_text = f"Rolling: {breakdown}\nYou rolled a {total} on {stat}"
+    user = current_user if current_user.is_authenticated else None
+    roll_msg = Message(chatid=chat_id, user=user)
+    db.session.add(roll_msg)
+    db.session.flush()
+    db.session.add(Variant(messageid=roll_msg.id, text=roll_text))
+    db.session.commit()
+
     return jsonify({
         "total": total,
         "breakdown": breakdown
@@ -400,7 +412,8 @@ def chat():
         db.session.commit()
 
     # Save what the user said
-    user = User.query.filter_by(username="Player1").first()
+    from flask_login import current_user
+    user = current_user if current_user.is_authenticated else None
     user_msg = Message(chatid=chat.id, user=user)
     db.session.add(user_msg)
     db.session.flush()

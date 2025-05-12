@@ -50,10 +50,47 @@ export default function ChatBox() {
   const [loading, setLoading] = useState(false);
   // Tracks if the player has been knocked out
   const [isKO, setIsKO] = useState(false);
+  const [messageHistory, setMessageHistory] = useState([]);
 
   const [character, setCharacter] = useState<any>(null);
 
   const { chatId } = useParams<{ chatId: string }>();
+
+  useEffect(() => {
+    if (!chatId) return;
+  
+    fetch(`http://localhost:5000/api/v1/messages?chatid=${chatId}`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const messages = data.messages || [];
+  
+        const flatChat = messages.flatMap((msg: any) =>
+          msg.variants.map((v: string) => {
+            // Strip embedded HTML-style comments
+            const clean = v.replace(/<!--[\s\S]*?-->/g, "").trim();
+          
+            // Filter out prompts like "The player rolled..."
+            if (/^The player rolled \d+ on a/i.test(clean)) return null;
+          
+            // Let through system lines like rolls
+            const isSystem = /^Rolling:|^You rolled/i.test(clean);
+            if (isSystem) return clean;
+          
+            // Apply speaker prefix for remaining content
+            const prefix = msg.user === "user" ? "You: " : "DM: ";
+            return `${prefix}${clean}`;
+          })
+        ).filter(Boolean);
+        
+        setChat(flatChat);
+      })
+      .catch((err) => {
+        console.error("Failed to load message history", err);
+      });
+  }, [chatId]);
+
   const location = useLocation();
   const intro = location.state?.intro;
 
@@ -78,7 +115,6 @@ export default function ChatBox() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: "Player1",
           message: userText,
           provider,
           chatId,
@@ -266,7 +302,6 @@ export default function ChatBox() {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
                                       body: JSON.stringify({
-                                        username: "Player1",
                                         action: `Rolled ${total} on ${stat}`,
                                         chatId,
                                       }),

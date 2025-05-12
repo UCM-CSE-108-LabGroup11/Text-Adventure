@@ -131,6 +131,22 @@ export default function WorldSelect() {
     navigate(`/Play/${chatId}`);
   };
 
+
+  const handleDelete = async (chatId: number) => {
+    if (!confirm("Are you sure you want to delete this world?")) return;
+  
+    try {
+      await fetch(`http://localhost:5000/api/v1/chats/${chatId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+  
+      setExistingChats((prev) => prev.filter((chat) => chat.id !== chatId));
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
+    }
+  };
+
   return (
     <motion.div
       className="min-h-screen flex flex-col items-center px-4 py-8 space-y-8"
@@ -163,9 +179,18 @@ export default function WorldSelect() {
                 Theme: {chat.theme?.replace("-", " ") || "Default"}
               </p>
             </div>
-            <Button onClick={() => handleSelect(chat.id)} className="mt-3">
+            <div className="flex gap-2 mt-3">
+            <Button onClick={() => handleSelect(chat.id)} className="flex-1">
               Enter
             </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => handleDelete(chat.id)}
+            >
+              Delete
+            </Button>
+          </div>
           </motion.div>
         ))}
       </div>

@@ -318,8 +318,10 @@ def get_chats():
 @login_required
 def get_messages():
     from website.models import Message, Variant
-
     chatid = request.args.get("chatid")
+    if not chatid:
+        return jsonify({"error": "Missing chatid"}), 400
+
     messages = Message.query.filter_by(chatid=chatid).order_by(Message.id).all()
 
     return jsonify({
@@ -332,3 +334,16 @@ def get_messages():
             for msg in messages
         ]
     })
+
+@chat_management_bp.route("/chats/<int:chatid>", methods=["DELETE"])
+@login_required
+def delete_chat(chatid):
+    from website.models import Chat
+    from website import db
+    chat = Chat.query.filter_by(id=chatid, userid=current_user.id).first()
+    if not chat:
+        return jsonify({"error": "Chat not found or unauthorized"}), 404
+
+    db.session.delete(chat)
+    db.session.commit()
+    return jsonify({"message": "Chat deleted successfully"}), 200
