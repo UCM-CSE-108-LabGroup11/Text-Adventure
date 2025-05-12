@@ -2,29 +2,49 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/AuthContext";
 
 export default function LandingPage() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-[--background] to-[--card] text-foreground">
-        <div className="container mx-auto px-4 py-16">
-            <Header />
-            <HeroSection />
-            <FeaturesSection />
-            <CallToAction />
-        </div>
+            <div className="container mx-auto px-4 py-16">
+                <Header />
+                <HeroSection />
+                <FeaturesSection />
+                <CallToAction />
+            </div>
         </div>
     );
 }
 
 function Header() {
+    const { user, setUser } = useAuth();
+
+    const handleLogout = () => {
+        localStorage.removeItem("access_token");
+        setUser(null);
+    };
+
     return (
         <nav className="flex items-center justify-between mb-16">
-        <div className="text-2xl font-bold">AI Adventure</div>
-        <div className="space-x-4">
-            <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
-            <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
-            <Button asChild size="sm" variant="link"><Link to="/Play">Start Playing</Link></Button>
-        </div>
+            <div className="text-2xl font-bold">AI Adventure</div>
+            <div className="space-x-4 flex items-center">
+                <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
+                <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+                <Button asChild size="sm" variant="link"><Link to="/Play">Play</Link></Button>
+
+                {user ? (
+                    <>
+                        <span className="text-sm text-muted-foreground">Welcome, <strong>{user.username}</strong></span>
+                        <Button size="sm" variant="outline" onClick={handleLogout}>Logout</Button>
+                    </>
+                ) : (
+                    <>
+                        <Button asChild size="sm" variant="default"><Link to="/login">Login</Link></Button>
+                        <Button asChild size="sm" variant="outline"><Link to="/register">Register</Link></Button>
+                    </>
+                )}
+            </div>
         </nav>
     );
 }
@@ -32,13 +52,13 @@ function Header() {
 function HeroSection() {
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-24">
-        <h1 className="text-6xl font-bold mb-6 text-foreground">
-            Embark on an AI-Powered Adventure
-        </h1>
-        <p className="text-xl text-muted-foreground mb-8">
-            Experience unique, dynamically generated stories that adapt to your choices
-        </p>
-        <Button asChild size="lg" variant="default"><Link to="/Play">Begin Your Journey</Link></Button>
+            <h1 className="text-6xl font-bold mb-6 text-foreground">
+                Embark on an AI-Powered Adventure
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8">
+                Experience unique, dynamically generated stories that adapt to your choices
+            </p>
+            <Button asChild size="lg" variant="default"><Link to="/Play">Begin Your Journey</Link></Button>
         </motion.div>
     );
 }
@@ -59,31 +79,31 @@ function FeaturesSection() {
         },
     ];
 
-  return (
+    return (
         <div className="grid md:grid-cols-3 gap-8 mb-24">
-        {features.map((feature, index) => (
-            <Card key={index} className="bg-card border-accent text-card-foreground">
-            <CardHeader>
-                <CardTitle>{feature.title}</CardTitle>
-            </CardHeader>
-            <CardContent>{feature.description}</CardContent>
-            </Card>
-        ))}
+            {features.map((feature, index) => (
+                <Card key={index} className="bg-card border-accent text-card-foreground">
+                    <CardHeader>
+                        <CardTitle>{feature.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>{feature.description}</CardContent>
+                </Card>
+            ))}
         </div>
-  );
+    );
 }
 
 function CallToAction() {
     return (
         <div className="text-center">
-        <h2 className="text-4xl font-bold mb-6 text-foreground">Ready to Start Your Adventure?</h2>
-        <p className="text-xl text-muted-foreground mb-8">
-            Join thousands of players creating their own unique stories
-        </p>
-        <div className="space-x-4">
-            <Button asChild size="sm" variant="secondary"><Link to="/Play">Play Now</Link></Button>
-            <Button asChild size="sm" variant="secondary"><Link to="/Features">Learn More</Link></Button>
-        </div>
+            <h2 className="text-4xl font-bold mb-6 text-foreground">Ready to Start Your Adventure?</h2>
+            <p className="text-xl text-muted-foreground mb-8">
+                Join thousands of players creating their own unique stories
+            </p>
+            <div className="space-x-4">
+                <Button asChild size="sm" variant="secondary"><Link to="/Play">Play Now</Link></Button>
+                <Button asChild size="sm" variant="secondary"><Link to="/Features">Learn More</Link></Button>
+            </div>
         </div>
     );
 }

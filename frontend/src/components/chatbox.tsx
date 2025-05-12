@@ -2,25 +2,43 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, useLocation } from "react-router-dom";
-import CharacterSheet from "@/CharacterSheet";
+import CharacterSheet from "../CharacterSheet";
+import { useAuth } from "../AuthContext";
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {
+  const { user, setUser } = useAuth();
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    setUser(null);
+  };
+
   return (
-    <nav className="flex items-center justify-between mb-8">
-      <div className="text-2xl font-bold">
-        <Link to="/" className="hover:underline text-inherit">
+    <nav className="flex items-center justify-between mb-16">
+      <Link to="/" className="text-2xl hover:underline underline-offset-4 font-bold text-gray-600 hover:text-gray-900">
           AI Adventure
-        </Link>
-      </div>
-      <div className="space-x-4">
+      </Link>
+      <div className="space-x-4 flex items-center">
         <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
         <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+        <Button asChild size="sm" variant="link"><Link to="/Play">Play</Link></Button>
+
+        {user ? (
+          <>
+              <span className="text-sm text-muted-foreground">Welcome, <strong>{user.username}</strong></span>
+              <Button size="sm" variant="outline" onClick={handleLogout}>Logout</Button>
+          </>
+          ) : (
+          <>
+              <Button asChild size="sm" variant="default"><Link to="/login">Login</Link></Button>
+              <Button asChild size="sm" variant="outline"><Link to="/register">Register</Link></Button>
+          </>
+          )}
       </div>
     </nav>
   );
 }
-
 export default function ChatBox() {
   // Stores the ongoing chat log as an array of message strings
   const [chat, setChat] = useState<string[]>([]);
@@ -32,10 +50,48 @@ export default function ChatBox() {
   const [loading, setLoading] = useState(false);
   // Tracks if the player has been knocked out
   const [isKO, setIsKO] = useState(false);
+  const [messageHistory, setMessageHistory] = useState([]);
 
   const [character, setCharacter] = useState<any>(null);
 
   const { chatId } = useParams<{ chatId: string }>();
+
+  useEffect(() => {
+    if (!chatId) return;
+    fetch(`http://localhost:5000/api/v1/messages?chatid=${chatId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const messages = data.messages || [];
+  
+        const flatChat = messages.flatMap((msg: any) =>
+          msg.variants.map((v: string) => {
+            // Strip embedded HTML-style comments
+            const clean = v.replace(/<!--[\s\S]*?-->/g, "").trim();
+          
+            // Filter out prompts like "The player rolled..."
+            if (/^The player rolled \d+ on a/i.test(clean)) return null;
+          
+            // Let through system lines like rolls
+            const isSystem = /^Rolling:|^You rolled/i.test(clean);
+            if (isSystem) return clean;
+          
+            // Apply speaker prefix for remaining content
+            const prefix = msg.user === "user" ? "You: " : "DM: ";
+            return `${prefix}${clean}`;
+          })
+        ).filter(Boolean);
+        
+        setChat(flatChat);
+      })
+      .catch((err) => {
+        console.error("Failed to load message history", err);
+      });
+  }, [chatId]);
+
   const location = useLocation();
   const intro = location.state?.intro;
 
@@ -58,9 +114,11 @@ export default function ChatBox() {
       // Send POST request to backend
       const res = await fetch("http://localhost:5000/api/v1/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+        },
         body: JSON.stringify({
-          username: "Player1",
           message: userText,
           provider,
           chatId,
@@ -136,7 +194,6 @@ export default function ChatBox() {
       {/* Wrapper keeps everything aligned */}
       <div className="max-w-6xl mx-auto">
         {/* Keep the header above the content so things align better */}
-        <Header />
 
         {/* Main layout: side-by-side chat and sheet */}
         <motion.div
@@ -231,7 +288,10 @@ export default function ChatBox() {
                                   try {
                                     const rollRes = await fetch("http://localhost:5000/api/v1/roll", {
                                       method: "POST",
-                                      headers: { "Content-Type": "application/json" },
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+                                      },
                                       body: JSON.stringify({ stat, chatId }),
                                     });
 
@@ -246,9 +306,11 @@ export default function ChatBox() {
 
                                     const res2 = await fetch("http://localhost:5000/api/v1/chat", {
                                       method: "POST",
-                                      headers: { "Content-Type": "application/json" },
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+                                      },
                                       body: JSON.stringify({
-                                        username: "Player1",
                                         action: `Rolled ${total} on ${stat}`,
                                         chatId,
                                       }),

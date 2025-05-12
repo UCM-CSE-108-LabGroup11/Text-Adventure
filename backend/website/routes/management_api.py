@@ -1,10 +1,13 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import get_jwt_identity, jwt_required
 import openai
 import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file (like your default OpenAI API key)
 load_dotenv()
+
+print("OPENAI_API_KEY (debug):", os.getenv("OPENAI_API_KEY"))
 
 # Set the default API key from environment (can be overridden per user later)
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -24,7 +27,7 @@ RULE_MODE_SYSTEM_PROMPTS = {
 chat_management_bp = Blueprint("chat_management", __name__)
 
 @chat_management_bp.route("/character", methods=["POST"])
-def create_character():
+def create_or_update_character():
     from website import db
     from website.models import Character, Chat
 
@@ -34,47 +37,43 @@ def create_character():
     char_class = data.get("charClass") or data.get("char_class")
     backstory = data.get("backstory", "")
 
-    # ensure the chat exists
     chat = Chat.query.get(chatid)
     if not chat:
         return jsonify({"error": "Chat not found"}), 404
 
-    # create or update character
-    if char_class.lower() == "mage":
-        char = Character(
-            chatid=chatid,
-            name=name,
-            char_class=char_class,
-            backstory=backstory,
-            spell_power=12,
-            strength=0,
-        )
+    char = Character.query.filter_by(chatid=chatid).first()
+    if char:
+        # Update existing
+        char.name = name
+        char.char_class = char_class
+        char.backstory = backstory
     else:
+        # Create new
         char = Character(
             chatid=chatid,
             name=name,
             char_class=char_class,
             backstory=backstory,
-            spell_power=0,
-            strength=10,
+            spell_power=12 if char_class.lower() == "mage" else 0,
+            strength=10 if char_class.lower() != "mage" else 0,
         )
+        db.session.add(char)
 
-    db.session.add(char)
     db.session.commit()
 
     return jsonify({
-      "status": "ok",
-      "character": {
-        "id": char.id,
-        "chatid": char.chatid,
-        "name": char.name,
-        "char_class": char.char_class,
-        "backstory": char.backstory,
-        "xp": char.xp,
-        "level": char.level,
-        "strength": char.strength,
-        "spell_power": char.spell_power,    
-      }
+        "status": "ok",
+        "character": {
+            "id": char.id,
+            "chatid": char.chatid,
+            "name": char.name,
+            "char_class": char.char_class,
+            "backstory": char.backstory,
+            "xp": char.xp,
+            "level": char.level,
+            "strength": char.strength,
+            "spell_power": char.spell_power,    
+        }
     }), 201
 
 @chat_management_bp.route("/character", methods=["GET"])
@@ -201,9 +200,13 @@ def level_up():
 
 
 @chat_management_bp.route("/chats", methods=["POST"])
+@jwt_required()
 def create_chat():
     from website.models import Chat, Message, Variant, User
     from website import db
+
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
 
     data = request.get_json()
     name = data.get("name")
@@ -216,7 +219,17 @@ def create_chat():
 
     # new_chat = Chat(name=name, rule_mode=rule_mode, user=current_user) 
 
-    new_chat = Chat(name=name, rule_mode=rule_mode, theme=theme, custom_theme=custom_theme) # Remove this when we have authentication 
+    
+
+
+    new_chat = Chat(
+        name=name,
+        rule_mode=rule_mode,
+        theme=theme,
+        custom_theme=custom_theme,
+        user=user
+    )
+    
     db.session.add(new_chat)
     db.session.flush()  # Get ID before GPT
 
@@ -280,3 +293,71 @@ def create_chat():
         "custom_theme": new_chat.custom_theme,
         "intro": intro_text
     }), 201
+
+
+@chat_management_bp.route("/chats", methods=["GET"])
+@jwt_required()
+def get_chats():
+    from website.models import Chat
+
+    user_id = get_jwt_identity()
+    chats = Chat.query.filter_by(userid=user_id).all()
+
+    return jsonify({
+        "chats": [
+            {
+                "id": chat.id,
+                "name": chat.name,
+                "rule_mode": chat.rule_mode,
+                "theme": chat.theme,
+                "custom_theme": chat.custom_theme,
+            }
+            for chat in chats
+        ]
+    }), 200
+
+
+@chat_management_bp.route("/messages", methods=["GET"])
+@jwt_required()
+def get_messages():
+    from website.models import Chat, Message, Variant
+    try:
+        user_id = get_jwt_identity()
+        chatid = int(request.args.get("chatid"))  # cast to int
+
+        chat = Chat.query.filter_by(id=chatid, userid=user_id).first()
+        if not chat:
+            return jsonify({"error": "Chat not found or unauthorized"}), 404
+
+        messages = Message.query.filter_by(chatid=chatid).order_by(Message.id).all()
+
+        return jsonify({
+            "messages": [
+                {
+                    "id": msg.id,
+                    "user": "user" if msg.userid == user_id else "dm",
+                    "variants": [v.text for v in msg.variants],
+                }
+                for msg in messages
+            ]
+        }), 200
+
+    except Exception as e:
+        print("💥 Error in /messages:", str(e))
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
+    
+@chat_management_bp.route("/chats/<int:chatid>", methods=["DELETE"])
+@jwt_required()
+def delete_chat(chatid):
+    from website.models import Chat, Message, Variant, Character
+    from website import db
+
+    user_id = get_jwt_identity()
+    chat = Chat.query.filter_by(id=chatid, userid=user_id).first()
+    if not chat:
+        return jsonify({"error": "Chat not found or unauthorized"}), 404
+
+    # Optional: delete related data (cascades if properly set up)
+    db.session.delete(chat)
+    db.session.commit()
+    return jsonify({"message": "Chat deleted"}), 200

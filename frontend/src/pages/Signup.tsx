@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/AuthContext";
 
 import {
     Card, 
@@ -50,6 +51,8 @@ export default function Signup () {
     const navigate = useNavigate ();
     const [isLoading, setIsLoading] = useState (false);
     const [formError, setFormError] = useState<string | null> (null);
+    const { fetchUser } = useAuth();
+    const BASE_URL = "http://localhost:5000";
 
     const form = useForm<z.infer<typeof formSchema>> ({
         resolver: zodResolver (formSchema),
@@ -66,7 +69,7 @@ export default function Signup () {
         setFormError (null);
 
         try {
-            const response = await fetch ("/api/v1/signup", {
+            const response = await fetch (`${BASE_URL}/api/v1/auth/signup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -97,7 +100,9 @@ export default function Signup () {
 
             console.log ("Signup successful:", data);
             localStorage.setItem ("access_token", data.access_token);
-            navigate ("/Login");
+            console.log("Token:", data.access_token);
+            await fetchUser(); 
+            navigate ("/login");
         } catch (error) {
             console.error ("Signup request failed:", error);
             setFormError ("An error occurred. Please check your connection and try again.");

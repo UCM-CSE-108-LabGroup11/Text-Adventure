@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import CharacterModal from "@/CharacterModal";
+import CharacterModal from "../CharacterModal"; 
+import { useAuth } from "../AuthContext";
 
 // Updated to include theme + customTheme
 async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string) {
@@ -10,8 +11,8 @@ async function createNewChat(name: string, ruleMode: string, theme: string, cust
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
     },
-    credentials: "include",
     body: JSON.stringify({ name, rule_mode: ruleMode, theme, custom_theme: customTheme }),
   });
 
@@ -21,22 +22,62 @@ async function createNewChat(name: string, ruleMode: string, theme: string, cust
 async function fetchChats() {
   const res = await fetch("http://localhost:5000/api/v1/chats", {
     method: "GET",
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+    }
   });
   return res.json();
 }
 
 function Header() {
+  const { user, setUser } = useAuth();
+
+  const handleLogout = async () => {
+    await fetch("/api/v1/auth/logout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+      }
+    });
+    setUser(null);
+  };
+
   return (
-    <nav className="w-full max-w-4xl flex items-center justify-between mb-4">
-      <div className="text-2xl font-bold">
-        <Link to="/" className="hover:underline text-inherit">AI Adventure</Link>
+    <header className="w-full py-4 px-6 mb-6">
+      <div className="max-w-6xl mx-auto flex justify-between items-center">
+        <div className="flex items-center space-x-6">
+        <Link to="/" className="text-2xl hover:underline underline-offset-4 font-bold text-gray-600 hover:text-gray-900">
+          AI Adventure
+        </Link>
+          <nav className="flex space-x-4 text-sm font-medium text-gray-600">
+            <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
+            <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+            <Button asChild size="sm" variant="link"><Link to="/Play">Play</Link></Button>
+          </nav>
+        </div>
+        <div className="flex items-center space-x-4">
+          {user ? (
+            <>
+              <span className="text-sm text-gray-700">Welcome, <strong>{user.username}</strong></span>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button asChild variant="default" size="sm">
+                <Link to="/login">Login</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/register">Register</Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
-      <div className="space-x-4">
-        <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
-        <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
-      </div>
-    </nav>
+    </header>
   );
 }
 
@@ -50,24 +91,17 @@ export default function WorldSelect() {
   const [pendingChat, setPendingChat] = useState<any>(null);
 
   const navigate = useNavigate();
-
   useEffect(() => {
-    const presets = [
-      { id: -1, name: "Lost Mines", rule_mode: "narrative", theme: "dark-fantasy" },
-      { id: -2, name: "Cyber Wastes", rule_mode: "rules-lite", theme: "cyberpunk" },
-    ];
-
     fetchChats()
       .then((data) => {
         const realChats = data.chats || [];
-        setExistingChats([...presets, ...realChats]);
+        setExistingChats(realChats);
       })
       .catch((err) => {
         console.error("Failed to fetch chats", err);
-        setExistingChats(presets);
+        setExistingChats([]);
       });
   }, []);
-
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
@@ -102,6 +136,25 @@ export default function WorldSelect() {
     navigate(`/Play/${chatId}`);
   };
 
+
+  const handleDelete = async (chatId: number) => {
+    if (!confirm("Are you sure you want to delete this world?")) return;
+  
+    try {
+      await fetch(`http://localhost:5000/api/v1/chats/${chatId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+        }
+      });
+  
+      setExistingChats((prev) => prev.filter((chat) => chat.id !== chatId));
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
+    }
+  };
+
   return (
     <motion.div
       className="min-h-screen flex flex-col items-center px-4 py-8 space-y-8"
@@ -109,8 +162,6 @@ export default function WorldSelect() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <Header />
-
       <div className="mt-8">
         <h2 className="text-3xl font-bold text-center">Your Worlds</h2>
       </div>
@@ -134,15 +185,17 @@ export default function WorldSelect() {
                 Theme: {chat.theme?.replace("-", " ") || "Default"}
               </p>
             </div>
-            {chat.id < 0 ? (
-              <p className="text-xs italic text-muted-foreground mt-2">
-                (Template — create it below)
-              </p>
-            ) : (
-              <Button onClick={() => handleSelect(chat.id)} className="mt-3">
-                Enter
-              </Button>
-            )}
+            <div className="flex gap-2 mt-3">
+            <Button onClick={() => handleSelect(chat.id)} className="flex-1">
+              Enter
+            </Button>
+            <Button
+            className="bg-red-600 text-white hover:bg-red-500 px-4 py-2 rounded-md text-sm font-medium transition"
+            onClick={() => handleDelete(chat.id)}
+            >
+              Delete
+          </Button>
+          </div>
           </motion.div>
         ))}
       </div>
@@ -199,6 +252,7 @@ export default function WorldSelect() {
       {showCharacterModal && (
         <CharacterModal
           onSubmit={handleCharacterSubmit}
+          onCancel={() => setShowCharacterModal(false)} // <-- add this
           theme={theme === "custom" ? customTheme : theme}
         />
       )}

@@ -1,106 +1,51 @@
 from werkzeug.security import generate_password_hash as gph
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from itertools import zip_longest
 from dotenv import load_dotenv
 from flask_cors import CORS
 from flask import Flask
-
-# from .site import main, auth as site_main, site_auth
-
 import os
+from itertools import zip_longest
 
 load_dotenv()
 
 db = SQLAlchemy()
 
-FLASK_SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", None)
-if(FLASK_SECRET_KEY is None):
-    print("WARNING:\t`FLASK_SECRET_KEY` environment variable not set; using default")
-    FLASK_SECRET_KEY = "defaultsecretkey"
-
+FLASK_SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "defaultsecretkey")
 DB_NAME = os.environ.get("DB_NAME", "database.db")
 
 def start():
     app = Flask(__name__)
-    CORS(app, supports_credentials=True)
-    JWTManager(app)
+
+    # Basic config
     app.config["SECRET_KEY"] = FLASK_SECRET_KEY
+    app.config["JWT_SECRET_KEY"] = FLASK_SECRET_KEY  # ✅ Required for JWT
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
 
+    # Init extensions
+    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+    JWTManager(app)
     db.init_app(app)
 
-    # app.register_blueprint(site_main)
-    # app.register_blueprint(site_auth, url_prefix="/auth")
+    # Register blueprints
     from .models import User
     from .api import api
-    
     app.register_blueprint(api, url_prefix="/api/v1")
 
-
-    login_manager = LoginManager()
-    login_manager.login_view = "site_auth.login"
-    login_manager.init_app(app)
-
+    # Create DB if needed
     create_database(app)
 
-    @login_manager.user_loader
-    def load_user(id):
-        return(User.query.get(id))
-
-    return(app)
+    return app
 
 def create_database(app):
-    if(os.path.exists(os.path.join("./instance/", DB_NAME))):
+    if os.path.exists(os.path.join("./instance/", DB_NAME)):
         return
-    
+
     with app.app_context():
         db.create_all()
         from .models import User
 
-        """
-        # comma-separated credentials
-        admin_usernames = os.environ.get("DEFAULT_ADMIN_USERNAMES", "").split(",")
-        admin_passwords = os.environ.get("DEFAULT_ADMIN_PASSWORDS", "").split(",")
-
-        admin_emails = os.environ.get("DEFAULT_ADMIN_EMAILS", "").split(",")
-
-        admin_usernames_defined = (admin_usernames is not None) and (len(admin_usernames) > 0)
-        admin_passwords_defined = (admin_passwords is not None) and (len(admin_passwords) > 0)
-
-        # if no credentials, generic defaults because admin user is required
-        if(not admin_usernames_defined or not admin_passwords_defined):
-            admin_user = User(
-                username="admin",
-                email=admin_emails[0] if admin_emails else "admin@example.com",
-                password="password",
-                is_admin=True
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            print("Created Database")
-            return
-        
-        # 
-        for i, (username, password) in enumerate(zip_longest(admin_usernames, admin_passwords, fillvalue=None)):
-            if(username is None):
-                break
-
-            try:
-                email = admin_emails[i]
-            except:
-                email = f"admin{i}@example.com"
-
-            admin_user = User(
-                username=username,
-                email=email,
-                password=gph(password or "password"),
-                is_admin=True
-            )
-            db.session.add(admin_user)
-        """
-
+        # Create default admin user
         admin_user = User(
             username="admin",
             email="admin@example.com",
@@ -108,9 +53,5 @@ def create_database(app):
             is_admin=True
         )
         db.session.add(admin_user)
-        db.session.commit()
-        print("Created Database")
-        return
-
         db.session.commit()
         print("Created Database")

@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/AuthContext";
+
 
 import {
     Card,
@@ -40,6 +42,8 @@ export default function Login () {
     const navigate = useNavigate ();
     const [isLoading, setIsLoading] = useState (false);
     const [formError, setFormError] = useState<string | null> (null);
+    const { fetchUser } = useAuth();
+    const BASE_URL = "http://localhost:5000";
 
     const form = useForm<z.infer<typeof formSchema>> ({
         resolver: zodResolver (formSchema),
@@ -54,7 +58,7 @@ export default function Login () {
         setFormError (null);
 
         try {
-            const response = await fetch ("/api/v1/login", {
+            const response = await fetch (`${BASE_URL}/api/v1/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -84,8 +88,10 @@ export default function Login () {
             }
 
             console.log ("Login successful:", data);
-            localStorage.setItem ("access_token", data.access_token);
-            navigate ("/Play")
+            localStorage.setItem("access_token", data.access_token);
+            console.log("Token:", data.access_token);
+            await fetchUser();              
+            navigate("/Play");
             // window.location.href = "/Play"
         } catch (error) {
             console.error ("Login request failed:", error);
@@ -95,42 +101,65 @@ export default function Login () {
         }
     }
     return (
-    <div className="flex items-center justify-center min-h-screen">
-    <Card className="w-[350px]">
-        <CardHeader>
-            <CardTitle>Log In!</CardTitle>
-        </CardHeader>
-
-        <CardContent><Form {...form}><form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField control={form.control} name="username" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Username or Email: </FormLabel>
-                    <FormControl>
-                        <Input placeholder="Username or Email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-            )} />
-
-            <FormField control={form.control} name="password" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Password: </FormLabel>
-                    <FormControl>
-                        <Input placeholder="Password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-            )} />
-
-            {formError && (
-                <div className="text-sm font-medium text-destructive">
-                    {formError}
-                </div>
-            )}
-
-            <Button type="submit" disabled={isLoading}>{isLoading ? "Logging in..." : "Log In!"}</Button>
-        </form></Form></CardContent>
-    </Card>
-    </div>
-    )
+        <div className="flex items-center justify-center min-h-screen">
+          <Card className="w-[350px]">
+            <CardHeader>
+              <CardTitle>Log In!</CardTitle>
+            </CardHeader>
+      
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username or Email: </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Username or Email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+      
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password: </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Password" type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+      
+                  {formError && (
+                    <div className="text-sm font-medium text-destructive">
+                      {formError}
+                    </div>
+                  )}
+      
+                  <div className="flex flex-col gap-2">
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading ? "Logging in..." : "Log In!"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => navigate("/register")}
+                    >
+                      Register
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+      );
 }
