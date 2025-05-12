@@ -63,7 +63,7 @@ export default function ChatBox() {
 
   useEffect(() => {
     if (!chatId) return;
-    fetch(`http://localhost:5000/api/v1/messages?chatid=${chatId}`, {
+    fetch(`/api/v1/messages?chatid=${chatId}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("access_token")}`,
       },
@@ -117,7 +117,7 @@ export default function ChatBox() {
 
     try {
       // Send POST request to backend
-      const res = await fetch("http://localhost:5000/api/v1/chat", {
+      const res = await fetch("/api/v1/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -173,7 +173,7 @@ export default function ChatBox() {
   useEffect(() => {
     const fetchCharacter = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/v1/character?chatid=${chatId}`);
+        const res = await fetch(`/api/v1/character?chatid=${chatId}`);
         const data = await res.json();
         setCharacter(data.character);
         if (data.character?.health === 0) setIsKO(true);
@@ -295,7 +295,7 @@ export default function ChatBox() {
                                 if (stat) {
                                   setLoading(true);
                                   try {
-                                    const rollRes = await fetch("http://localhost:5000/api/v1/roll", {
+                                    const rollRes = await fetch("/api/v1/roll", {
                                       method: "POST",
                                       headers: {
                                         "Content-Type": "application/json",
@@ -313,7 +313,7 @@ export default function ChatBox() {
                                       `You rolled a ${total} on ${stat}`,
                                     ]);
 
-                                    const res2 = await fetch("http://localhost:5000/api/v1/chat", {
+                                    const res2 = await fetch("/api/v1/chat", {
                                       method: "POST",
                                       headers: {
                                         "Content-Type": "application/json",
@@ -330,7 +330,7 @@ export default function ChatBox() {
                                     if (data2.reply) {
                                       setChat((prev) => [...prev, `DM: ${data2.reply}`]);
                                       try {
-                                        const res = await fetch(`http://localhost:5000/api/v1/character?chatid=${chatId}`);
+                                        const res = await fetch(`/api/v1/character?chatid=${chatId}`);
                                         const data = await res.json();
                                         setCharacter(data.character);
                                       } catch (err) {

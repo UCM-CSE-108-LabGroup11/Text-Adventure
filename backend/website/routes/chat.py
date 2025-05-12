@@ -3,7 +3,6 @@ import openai
 import os
 from dotenv import load_dotenv
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from website.models import User
 import re, random
 
 
@@ -80,7 +79,7 @@ def roll_stat():
         total = roll
         breakdown = f"Roll: [{roll}]"
 
-    from website.models import Message, Variant
+    from website.models import Message, Variant, User
     from website import db
 
     # Save roll as a user message
@@ -103,6 +102,8 @@ def roll_stat():
 @chat_bp.route("/chat", methods=["POST"])
 @jwt_required()
 def chat():
+    from website.models import Chat, Message, Variant, Character, User
+    from website import db
     # authenticate user
     userid = get_jwt_identity()
     user = User.query.get(userid)
@@ -112,8 +113,6 @@ def chat():
     # Grab the stuff the frontend sent us
     data = request.json
     message = data.get("message", "").strip()
-    from website.models import Chat, Message, Variant, Character, User
-    from website import db
 
     chat_id = data.get("chatId")
     chat = Chat.query.get(chat_id)
@@ -347,6 +346,10 @@ def chat():
         .limit(10)
         .all()
     )
+
+    user = User.query.get(userid)
+    username = user.username if user else None
+    
     for msg in reversed(recent_messages):
         text = msg.variants[0].text if msg.variants else ""
         role = "user" if msg.user and msg.user.username == username else "assistant"
@@ -421,6 +424,8 @@ def chat():
         print(f"[HEAL] {character.name} healed {healing} HP. New health: {character.health}")
 
         db.session.commit()
+
+        
 
     # Save what the user said
     user = None

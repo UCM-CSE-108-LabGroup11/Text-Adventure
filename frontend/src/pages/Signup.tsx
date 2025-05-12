@@ -52,7 +52,6 @@ export default function Signup () {
     const [isLoading, setIsLoading] = useState (false);
     const [formError, setFormError] = useState<string | null> (null);
     const { fetchUser } = useAuth();
-    const BASE_URL = "http://localhost:5000";
 
     const form = useForm<z.infer<typeof formSchema>> ({
         resolver: zodResolver (formSchema),
@@ -69,7 +68,7 @@ export default function Signup () {
         setFormError (null);
 
         try {
-            const response = await fetch (`${BASE_URL}/api/v1/auth/signup`, {
+            const response = await fetch (`/api/v1/auth/signup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

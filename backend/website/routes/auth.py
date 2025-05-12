@@ -88,6 +88,8 @@ def login():
     data = request.get_json()
     username = data.get("username", "").strip()
     password = data.get("password", "").strip()
+
+    field_errors = {}
     
     # full suite of checks to reduce DB queries
     # again; VERY minor optimization
@@ -114,7 +116,7 @@ def login():
             user = User.query.filter_by(email=username).first()
         if(user is None):
             field_errors["username"] = "No user with this username/email address."
-        elif(not cph(user.password, password)):
+        elif(not check_password_hash(user.password, password)):
             field_errors["password"] = "Invalid password."
 
     if field_errors:
