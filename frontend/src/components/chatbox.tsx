@@ -157,13 +157,13 @@ export default function ChatBox() {
   };
 
   useEffect(() => {
-    if (intro) {
+    if (intro && chat.length === 0) {
       const timeout = setTimeout(() => {
-        setChat([`DM: ${intro}`]);
+	setChat([`DM: ${intro}`]);
       }, 1500);
       return () => clearTimeout(timeout);
     }
-  }, [intro]);
+  }, [intro, chat]);
 
   // Auto-scroll to the bottom of the chat on new message
   useEffect(() => {
