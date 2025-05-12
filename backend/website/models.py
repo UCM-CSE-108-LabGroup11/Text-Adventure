@@ -6,7 +6,7 @@ from . import db
 
 import random, enum, json
 
-def shortid(leng: int = 8):
+def shortid(length: int = 8):
     characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_"
     return("".join(random.choice(characters) for i in range(length)))
 
