@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, useLocation } from "react-router-dom";
-import CharacterSheet from "@/CharacterSheet";
+import CharacterSheet from "./CharacterSheet";
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {
@@ -36,6 +36,7 @@ export default function ChatBox() {
   const [character, setCharacter] = useState<any>(null);
 
   const { chatId } = useParams<{ chatId: string }>();
+  const { userId } = useParams<{ userId: string }>();
   const location = useLocation();
   const intro = location.state?.intro;
 
@@ -64,6 +65,7 @@ export default function ChatBox() {
           message: userText,
           provider,
           chatId,
+          userId,
         }),
       });
 
@@ -232,7 +234,7 @@ export default function ChatBox() {
                                     const rollRes = await fetch("http://localhost:5000/api/v1/roll", {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ stat, chatId }),
+                                      body: JSON.stringify({ stat, chatId, userId }),
                                     });
 
                                     const rollData = await rollRes.json();
@@ -251,6 +253,7 @@ export default function ChatBox() {
                                         username: "Player1",
                                         action: `Rolled ${total} on ${stat}`,
                                         chatId,
+                                        userId,
                                       }),
                                     });
 
