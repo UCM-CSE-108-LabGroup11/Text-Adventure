@@ -6,7 +6,7 @@ from . import db
 
 import random, enum
 
-def shortid(leng: int = 8):
+def shortid(length: int = 8):
     characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_"
     return("".join(random.choice(characters) for i in range(length)))
 
@@ -60,10 +60,12 @@ class Chat(db.Model):
     messages = db.relationship("Message", back_populates="chat")
     theme = db.Column(db.String(64), default="default")
     custom_theme = db.Column(db.Text, nullable=True)
+    characters = db.relationship("Characters", back_populates="chat")
 
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chatid = db.Column(db.Integer, db.ForeignKey("chats.id"))
+    userid = db.Column(db.Integer, db.ForeignKey("users.id"))
     name = db.Column(db.String(64))
     health = db.Column(db.Integer, default=100)
     spell_power = db.Column(db.Integer, default=10)
