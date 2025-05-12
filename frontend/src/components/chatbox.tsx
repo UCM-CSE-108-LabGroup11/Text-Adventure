@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, useLocation } from "react-router-dom";
 import CharacterSheet from "../CharacterSheet";
 import { useAuth } from "../AuthContext";
+import { useGPTKey } from "../GPTKeyContext";
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {
@@ -52,9 +53,13 @@ export default function ChatBox() {
   const [isKO, setIsKO] = useState(false);
   const [messageHistory, setMessageHistory] = useState([]);
 
+  
+  const { apiKey } = useGPTKey(); 
+
   const [character, setCharacter] = useState<any>(null);
 
   const { chatId } = useParams<{ chatId: string }>();
+  
 
   useEffect(() => {
     if (!chatId) return;
@@ -122,6 +127,7 @@ export default function ChatBox() {
           message: userText,
           provider,
           chatId,
+          apiKey,
         }),
       });
 
@@ -313,6 +319,7 @@ export default function ChatBox() {
                                       body: JSON.stringify({
                                         action: `Rolled ${total} on ${stat}`,
                                         chatId,
+                                        apiKey,
                                       }),
                                     });
 

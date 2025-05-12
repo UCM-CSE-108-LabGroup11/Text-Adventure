@@ -9,9 +9,11 @@ import Layout from "./components/Layout";
 import { AuthProvider } from "./AuthContext";
 import PrivateRoute from "@/components/PrivateRoute";
 import ChatBox from "@/components/chatbox";
+import { GPTKeyProvider } from "./GPTKeyContext";
 
 function App() {
   return (
+    <GPTKeyProvider>
     <AuthProvider>
       <Router>
         <Routes>
@@ -37,6 +39,7 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </GPTKeyProvider>
   );
 }
 

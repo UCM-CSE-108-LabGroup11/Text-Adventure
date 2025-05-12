@@ -144,6 +144,7 @@ def chat():
 
     chat_id = data.get("chatId")
     api_key = data.get("apiKey")
+    print("API key received:", api_key)
     provider = data.get("provider", "openai")
 
     # We only support OpenAI for now

@@ -7,10 +7,6 @@ from dotenv import load_dotenv
 # Load environment variables from .env file (like your default OpenAI API key)
 load_dotenv()
 
-print("OPENAI_API_KEY (debug):", os.getenv("OPENAI_API_KEY"))
-
-# Set the default API key from environment (can be overridden per user later)
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 RULE_MODE_SYSTEM_PROMPTS = {
     "narrative": (
@@ -31,11 +27,15 @@ def create_or_update_character():
     from website import db
     from website.models import Character, Chat
 
-    data = request.get_json()
     chatid = data.get("chatid")
+    data = request.get_json()
     name = data.get("name")
-    char_class = data.get("charClass") or data.get("char_class")
-    backstory = data.get("backstory", "")
+    rule_mode = data.get("rule_mode", "narrative")
+    theme = data.get("theme", "default")
+    custom_theme = data.get("custom_theme", "")
+    api_key = (data.get("apiKey") or "").strip()
+    print("📥 Received GPT key in /chats:", api_key)
+    openai.api_key = api_key or os.getenv("OPENAI_API_KEY")
 
     chat = Chat.query.get(chatid)
     if not chat:
@@ -213,6 +213,11 @@ def create_chat():
     rule_mode = data.get("rule_mode", "narrative")
     theme = data.get("theme", "default")
     custom_theme = data.get("custom_theme", "")
+
+
+    api_key = (data.get("apiKey") or "").strip()
+    print("📥 Received GPT key in /chats:", api_key)
+    openai.api_key = api_key or os.getenv("OPENAI_API_KEY")
 
     if not name:
         return jsonify({"error": "World name is required"}), 400

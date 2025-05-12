@@ -4,16 +4,18 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import CharacterModal from "../CharacterModal"; 
 import { useAuth } from "../AuthContext";
+import { useGPTKey } from "../GPTKeyContext";
+
 
 // Updated to include theme + customTheme
-async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string) {
+async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string, apiKey: string | null) {
   const res = await fetch("http://localhost:5000/api/v1/chats", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
     },
-    body: JSON.stringify({ name, rule_mode: ruleMode, theme, custom_theme: customTheme }),
+    body: JSON.stringify({ name, rule_mode: ruleMode, theme, custom_theme: customTheme, apiKey}),
   });
 
   return res.json();
@@ -89,6 +91,7 @@ export default function WorldSelect() {
   const [existingChats, setExistingChats] = useState<any[]>([]);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
   const [pendingChat, setPendingChat] = useState<any>(null);
+  const { apiKey } = useGPTKey();
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -105,7 +108,8 @@ export default function WorldSelect() {
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
-      const newChat = await createNewChat(newName, ruleMode, theme, customTheme);
+      const newChat = await createNewChat(newName, ruleMode, theme, customTheme, apiKey);
+      console.log("📤 Sending GPT key:", apiKey);
       setPendingChat(newChat);
       setShowCharacterModal(true);
     } catch (err) {
@@ -121,6 +125,7 @@ export default function WorldSelect() {
         body: JSON.stringify({
           ...character,
           chatid: pendingChat.id,
+          apiKey, 
         }),
       });
 
@@ -186,8 +191,12 @@ export default function WorldSelect() {
               </p>
             </div>
             <div className="flex gap-2 mt-3">
-            <Button onClick={() => handleSelect(chat.id)} className="flex-1">
-              Enter
+            <Button
+              onClick={() => handleSelect(chat.id)}
+              className="flex-1"
+              disabled={!apiKey || !apiKey.trim()}
+            >
+              {!apiKey || !apiKey.trim() ? "Enter (Key Required)" : "Enter"}
             </Button>
             <Button
             className="bg-red-600 text-white hover:bg-red-500 px-4 py-2 rounded-md text-sm font-medium transition"
@@ -244,8 +253,12 @@ export default function WorldSelect() {
           />
         )}
 
-        <Button onClick={handleCreate} className="w-full">
-          Create and Start
+        <Button
+          onClick={handleCreate}
+          className="w-full"
+          disabled={!apiKey || !apiKey.trim()}
+        >
+          {!apiKey || !apiKey.trim() ? "Enter API Key to Start" : "Create and Start"}
         </Button>
       </div>
 
