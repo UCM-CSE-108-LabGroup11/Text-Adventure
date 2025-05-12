@@ -5,7 +5,6 @@ import {
     Card,
     CardHeader,
     CardTitle,
-    CardDescription,
     CardContent
 } from "@/components/ui/card";
 
@@ -50,7 +49,7 @@ export default function Login () {
         }
     })
 
-    async function onSubmit ( values: Z.infer<typeof formSchema> ) {
+    async function onSubmit ( values: z.infer<typeof formSchema> ) {
         setIsLoading (true);
         setFormError (null);
 
