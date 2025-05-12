@@ -3,24 +3,42 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, useLocation } from "react-router-dom";
 import CharacterSheet from "./CharacterSheet";
+import { useAuth } from "@/AuthContext";
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {
+  const { user, setUser } = useAuth();
+
+  const handleLogout = async () => {
+    await fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" });
+    setUser(null);
+  };
+
   return (
-    <nav className="flex items-center justify-between mb-8">
-      <div className="text-2xl font-bold">
-        <Link to="/" className="hover:underline text-inherit">
+    <nav className="flex items-center justify-between mb-16">
+      <Link to="/" className="text-2xl hover:underline underline-offset-4 font-bold text-gray-600 hover:text-gray-900">
           AI Adventure
-        </Link>
-      </div>
-      <div className="space-x-4">
+      </Link>
+      <div className="space-x-4 flex items-center">
         <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
         <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+        <Button asChild size="sm" variant="link"><Link to="/Play">Play</Link></Button>
+
+        {user ? (
+          <>
+              <span className="text-sm text-muted-foreground">Welcome, <strong>{user.username}</strong></span>
+              <Button size="sm" variant="outline" onClick={handleLogout}>Logout</Button>
+          </>
+          ) : (
+          <>
+              <Button asChild size="sm" variant="default"><Link to="/login">Login</Link></Button>
+              <Button asChild size="sm" variant="outline"><Link to="/register">Register</Link></Button>
+          </>
+          )}
       </div>
     </nav>
   );
 }
-
 export default function ChatBox() {
   // Stores the ongoing chat log as an array of message strings
   const [chat, setChat] = useState<string[]>([]);

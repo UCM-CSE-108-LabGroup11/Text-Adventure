@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_login import current_user, login_required
 import openai
 import os
 from dotenv import load_dotenv
@@ -201,6 +202,7 @@ def level_up():
 
 
 @chat_management_bp.route("/chats", methods=["POST"])
+@login_required
 def create_chat():
     from website.models import Chat, Message, Variant, User
     from website import db
@@ -216,7 +218,16 @@ def create_chat():
 
     # new_chat = Chat(name=name, rule_mode=rule_mode, user=current_user) 
 
-    new_chat = Chat(name=name, rule_mode=rule_mode, theme=theme, custom_theme=custom_theme) # Remove this when we have authentication 
+    
+    
+    new_chat = Chat(
+        name=name,
+        rule_mode=rule_mode,
+        theme=theme,
+        custom_theme=custom_theme,
+        user= current_user  # ← link to user
+    )
+    
     db.session.add(new_chat)
     db.session.flush()  # Get ID before GPT
 
@@ -280,3 +291,44 @@ def create_chat():
         "custom_theme": new_chat.custom_theme,
         "intro": intro_text
     }), 201
+
+
+@chat_management_bp.route("/chats", methods=["GET"])
+@login_required
+def get_chats():
+    from website.models import Chat
+
+    chats = Chat.query.filter_by(userid=current_user.id).all()
+
+    return jsonify({
+        "chats": [
+            {
+                "id": chat.id,
+                "name": chat.name,
+                "rule_mode": chat.rule_mode,
+                "theme": chat.theme,
+                "custom_theme": chat.custom_theme,
+            }
+            for chat in chats
+        ]
+    }), 200
+
+
+@chat_management_bp.route("/messages", methods=["GET"])
+@login_required
+def get_messages():
+    from website.models import Message, Variant
+
+    chatid = request.args.get("chatid")
+    messages = Message.query.filter_by(chatid=chatid).order_by(Message.id).all()
+
+    return jsonify({
+        "messages": [
+            {
+                "id": msg.id,
+                "user": msg.user,
+                "variants": [v.text for v in msg.variants],
+            }
+            for msg in messages
+        ]
+    })

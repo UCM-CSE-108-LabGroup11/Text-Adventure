@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import CharacterModal from "./CharacterModal"; // <- make sure this path is correct
+import CharacterModal from "./CharacterModal"; 
+import LoginPage from "./LoginPage";
+import { useAuth } from "@/AuthContext";
 
 // Updated to include theme + customTheme
 async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string) {
@@ -27,16 +29,50 @@ async function fetchChats() {
 }
 
 function Header() {
+  const { user, setUser } = useAuth();
+
+  const handleLogout = async () => {
+    await fetch("/api/v1/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
+  };
+
   return (
-    <nav className="w-full max-w-4xl flex items-center justify-between mb-4">
-      <div className="text-2xl font-bold">
-        <Link to="/" className="hover:underline text-inherit">AI Adventure</Link>
+    <header className="w-full py-4 px-6 mb-6">
+      <div className="max-w-6xl mx-auto flex justify-between items-center">
+        <div className="flex items-center space-x-6">
+        <Link to="/" className="text-2xl hover:underline underline-offset-4 font-bold text-gray-600 hover:text-gray-900">
+          AI Adventure
+        </Link>
+          <nav className="flex space-x-4 text-sm font-medium text-gray-600">
+            <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
+            <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+            <Button asChild size="sm" variant="link"><Link to="/Play">Play</Link></Button>
+          </nav>
+        </div>
+        <div className="flex items-center space-x-4">
+          {user ? (
+            <>
+              <span className="text-sm text-gray-700">Welcome, <strong>{user.username}</strong></span>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button asChild variant="default" size="sm">
+                <Link to="/login">Login</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/register">Register</Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
-      <div className="space-x-4">
-        <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
-        <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
-      </div>
-    </nav>
+    </header>
   );
 }
 
@@ -50,24 +86,17 @@ export default function WorldSelect() {
   const [pendingChat, setPendingChat] = useState<any>(null);
 
   const navigate = useNavigate();
-
   useEffect(() => {
-    const presets = [
-      { id: -1, name: "Lost Mines", rule_mode: "narrative", theme: "dark-fantasy" },
-      { id: -2, name: "Cyber Wastes", rule_mode: "rules-lite", theme: "cyberpunk" },
-    ];
-
     fetchChats()
       .then((data) => {
         const realChats = data.chats || [];
-        setExistingChats([...presets, ...realChats]);
+        setExistingChats(realChats);
       })
       .catch((err) => {
         console.error("Failed to fetch chats", err);
-        setExistingChats(presets);
+        setExistingChats([]);
       });
   }, []);
-
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
@@ -134,15 +163,9 @@ export default function WorldSelect() {
                 Theme: {chat.theme?.replace("-", " ") || "Default"}
               </p>
             </div>
-            {chat.id < 0 ? (
-              <p className="text-xs italic text-muted-foreground mt-2">
-                (Template — create it below)
-              </p>
-            ) : (
-              <Button onClick={() => handleSelect(chat.id)} className="mt-3">
-                Enter
-              </Button>
-            )}
+            <Button onClick={() => handleSelect(chat.id)} className="mt-3">
+              Enter
+            </Button>
           </motion.div>
         ))}
       </div>

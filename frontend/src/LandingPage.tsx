@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/AuthContext";
 
 export default function LandingPage() {
     return (
@@ -17,17 +18,36 @@ export default function LandingPage() {
 }
 
 function Header() {
+    const { user, setUser } = useAuth();
+  
+    const handleLogout = async () => {
+      await fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" });
+      setUser(null);
+    };
+  
     return (
-        <nav className="flex items-center justify-between mb-16">
+      <nav className="flex items-center justify-between mb-16">
         <div className="text-2xl font-bold">AI Adventure</div>
-        <div className="space-x-4">
-            <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
-            <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
-            <Button asChild size="sm" variant="link"><Link to="/Play">Start Playing</Link></Button>
+        <div className="space-x-4 flex items-center">
+          <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
+          <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
+          <Button asChild size="sm" variant="link"><Link to="/Play">Play</Link></Button>
+  
+          {user ? (
+            <>
+                <span className="text-sm text-muted-foreground">Welcome, <strong>{user.username}</strong></span>
+                <Button size="sm" variant="outline" onClick={handleLogout}>Logout</Button>
+            </>
+            ) : (
+            <>
+                <Button asChild size="sm" variant="default"><Link to="/login">Login</Link></Button>
+                <Button asChild size="sm" variant="outline"><Link to="/register">Register</Link></Button>
+            </>
+            )}
         </div>
-        </nav>
+      </nav>
     );
-}
+  }
 
 function HeroSection() {
     return (
