@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import CharacterModal from "./CharacterModal"; 
-import LoginPage from "./LoginPage";
+import { Button } from "../components/ui/button";
+import CharacterModal from "../CharacterModal"; 
+import LoginPage from "src/LoginPage";
 import { useAuth } from "@/AuthContext";
 
 // Updated to include theme + customTheme
