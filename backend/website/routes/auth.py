@@ -72,3 +72,18 @@ def me():
         "email": current_user.email,
         "is_admin": current_user.is_admin
     })
+
+
+@auth.route("/user/key", methods=["POST"])
+@login_required
+def store_user_api_key():
+    from flask import request, jsonify, session
+    from flask_login import login_required
+    data = request.get_json()
+    key = data.get("key")
+
+    if not key or not key.startswith("sk-"):
+        return jsonify({"error": "Invalid API key format"}), 400
+
+    session["openai_key"] = key
+    return jsonify({"message": "Key stored in session"}), 200
