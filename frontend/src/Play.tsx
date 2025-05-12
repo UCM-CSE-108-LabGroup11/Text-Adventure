@@ -184,12 +184,11 @@ export default function WorldSelect() {
               Enter
             </Button>
             <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDelete(chat.id)}
+            className="bg-red-600 text-white hover:bg-red-500 px-4 py-2 rounded-md text-sm font-medium transition"
+            onClick={() => handleDelete(chat.id)}
             >
               Delete
-            </Button>
+          </Button>
           </div>
           </motion.div>
         ))}
@@ -247,6 +246,7 @@ export default function WorldSelect() {
       {showCharacterModal && (
         <CharacterModal
           onSubmit={handleCharacterSubmit}
+          onCancel={() => setShowCharacterModal(false)} // <-- add this
           theme={theme === "custom" ? customTheme : theme}
         />
       )}
