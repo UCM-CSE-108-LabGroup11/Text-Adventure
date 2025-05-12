@@ -1,5 +1,5 @@
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from dotenv import load_dotenv
 
 from website.models import Chat, Message, Variant, User
@@ -283,6 +283,8 @@ def create_chat():
         theme_user_input = "The adventure themes are as follows:\n"
     for theme in themes:
         theme_user_input += f"- {theme.replace("_", " ").title()}: {THEMES[theme]}\n"
+
+    client = current_app.config["OPENAI_CLIENT"]
 
     # 1. General Setting
     setting_instruction = "You are running a D&D-like text adventure for the user. Write a general adventure setting based on their input. It should be concise, but descriptive and not directly address the user."

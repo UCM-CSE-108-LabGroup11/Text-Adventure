@@ -88,7 +88,6 @@ class Character(db.Model):
 class Message(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
-    chat_index = db.Column(db.Integer, nullable=False)
     chatid = db.Column(db.Integer, db.ForeignKey("chats.id"))
     chat = db.relationship("Chat", back_populates="messages")
     userid = db.Column(db.Integer, db.ForeignKey("users.id"))

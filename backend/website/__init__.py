@@ -4,8 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from flask_cors import CORS
 from flask import Flask
+from openai import OpenAI
 import os
-from itertools import zip_longest
 
 load_dotenv()
 
@@ -21,6 +21,11 @@ def start():
     app.config["SECRET_KEY"] = FLASK_SECRET_KEY
     app.config["JWT_SECRET_KEY"] = FLASK_SECRET_KEY  # ✅ Required for JWT
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
+
+    if(not os.environ.get("OPENAI_API_KEY")):
+        print("WARNING:\tNo OpenAI API Key set.")
+    client = OpenAI()
+    app.config["OPENAI_CLIENT"] = client
 
     # Init extensions
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
