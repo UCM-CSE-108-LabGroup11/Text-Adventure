@@ -52,6 +52,8 @@ export default function Signup () {
     const [isLoading, setIsLoading] = useState (false);
     const [formError, setFormError] = useState<string | null> (null);
     const { fetchUser } = useAuth();
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword2, setShowPassword2] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>> ({
         resolver: zodResolver (formSchema),
@@ -140,22 +142,41 @@ export default function Signup () {
             )} />
 
             <FormField control={form.control} name="password1" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Password: </FormLabel>
-                    <FormControl>
-                        <Input placeholder="Password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
+            <FormItem>
+                <FormLabel>Password: </FormLabel>
+                <FormControl>
+                <div className="relative">
+                    <Input type={showPassword ? "text" : "password"} placeholder="Password" {...field} />
+                    <button
+                    type="button"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-blue-600 hover:underline"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                    {showPassword ? "Hide" : "Show"}
+                    </button>
+                </div>
+                </FormControl>
+                <FormMessage />
+            </FormItem>
             )} />
+
             <FormField control={form.control} name="password2" render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Confirm Password: </FormLabel>
-                    <FormControl>
-                        <Input placeholder="Confirm Password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
+            <FormItem>
+                <FormLabel>Confirm Password: </FormLabel>
+                <FormControl>
+                <div className="relative">
+                    <Input type={showPassword2 ? "text" : "password"} placeholder="Confirm Password" {...field} />
+                    <button
+                    type="button"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-blue-600 hover:underline"
+                    onClick={() => setShowPassword2((prev) => !prev)}
+                    >
+                    {showPassword2 ? "Hide" : "Show"}
+                    </button>
+                </div>
+                </FormControl>
+                <FormMessage />
+            </FormItem>
             )} />
 
             {formError && (
