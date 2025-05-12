@@ -26,12 +26,13 @@ chat_management_bp = Blueprint("chat_management", __name__)
 def create_or_update_character():
     from website import db
     from website.models import Character, Chat
-
-    chatid = data.get("chatid")
     data = request.get_json()
+    chatid = data.get("chatid")
     name = data.get("name")
+    char_class = data.get("charClass") or data.get("char_class")
     rule_mode = data.get("rule_mode", "narrative")
     theme = data.get("theme", "default")
+    backstory = data.get("backstory", "")
     custom_theme = data.get("custom_theme", "")
     api_key = (data.get("apiKey") or "").strip()
     print("📥 Received GPT key in /chats:", api_key)
@@ -80,9 +81,12 @@ def create_or_update_character():
 def get_character():
     from website.models import Character
 
-    chatid = request.args.get("chatid")
-    if not chatid:
-        return jsonify({"error": "Missing chatid"}), 400
+    try:
+        chatid = int(request.args.get("chatid"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid chatid"}), 400
+
+    print(f"Looking for character with chatid={chatid}")
 
     char = Character.query.filter_by(chatid=chatid).first()
     if not char:

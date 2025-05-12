@@ -181,9 +181,12 @@ export default function ChatBox() {
         console.error("Failed to load character", err);
       }
     };
-
-    fetchCharacter();
-  }, [chat]);
+  
+    if (chatId) {
+      fetchCharacter();
+    }
+  }, [chatId, chat]);
+  
 
   // Determine the last DM message index with buttons
   let lastButtonsIndex = -1;

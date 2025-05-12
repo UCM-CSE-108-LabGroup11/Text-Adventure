@@ -29,9 +29,16 @@ export default function Header() {
               <Button asChild size="sm" variant="link">
                 <Link to="/Play">Play</Link>
               </Button>
-              <Button size="sm" variant="link" onClick={() => setShowSettings(true)}>
-                Your API Key
-              </Button>
+              {user && (
+                <Button
+                  size="sm"
+                  variant="link"
+                  onClick={() => setShowSettings(true)}
+                  className="font-bold"
+                >
+                  Your API Key
+                </Button>
+              )}
             </nav>
           </div>
 

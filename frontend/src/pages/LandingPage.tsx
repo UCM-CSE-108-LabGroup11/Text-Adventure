@@ -8,7 +8,6 @@ export default function LandingPage() {
     return (
         <div className="min-h-screen bg-gradient-to-b from-[--background] to-[--card] text-foreground">
             <div className="container mx-auto px-4 py-16">
-                <Header />
                 <HeroSection />
                 <FeaturesSection />
                 <CallToAction />
@@ -17,37 +16,7 @@ export default function LandingPage() {
     );
 }
 
-function Header() {
-    const { user, setUser } = useAuth();
 
-    const handleLogout = () => {
-        localStorage.removeItem("access_token");
-        setUser(null);
-    };
-
-    return (
-        <nav className="flex items-center justify-between mb-16">
-            <div className="text-2xl font-bold">AI Adventure</div>
-            <div className="space-x-4 flex items-center">
-                <Button asChild size="sm" variant="link"><Link to="/About">About</Link></Button>
-                <Button asChild size="sm" variant="link"><Link to="/Features">Features</Link></Button>
-                <Button asChild size="sm" variant="link"><Link to="/Play">Play</Link></Button>
-
-                {user ? (
-                    <>
-                        <span className="text-sm text-muted-foreground">Welcome, <strong>{user.username}</strong></span>
-                        <Button size="sm" variant="outline" onClick={handleLogout}>Logout</Button>
-                    </>
-                ) : (
-                    <>
-                        <Button asChild size="sm" variant="default"><Link to="/login">Login</Link></Button>
-                        <Button asChild size="sm" variant="outline"><Link to="/register">Register</Link></Button>
-                    </>
-                )}
-            </div>
-        </nav>
-    );
-}
 
 function HeroSection() {
     return (
