@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify
-from website.routes.chat import chat_bp
+from flask import Blueprint
+
 from website.routes.management_api import chat_management_bp
 from website.routes.auth import auth as site_auth
 

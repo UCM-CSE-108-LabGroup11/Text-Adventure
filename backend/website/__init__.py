@@ -1,4 +1,5 @@
 from werkzeug.security import generate_password_hash as gph
+from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from itertools import zip_longest
@@ -7,7 +8,6 @@ from flask_cors import CORS
 from flask import Flask
 
 # from .site import main, auth as site_main, site_auth
-from .api import api
 
 import os
 
@@ -25,6 +25,7 @@ DB_NAME = os.environ.get("DB_NAME", "database.db")
 def start():
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
+    JWTManager(app)
     app.config["SECRET_KEY"] = FLASK_SECRET_KEY
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_NAME}"
 
@@ -33,6 +34,8 @@ def start():
     # app.register_blueprint(site_main)
     # app.register_blueprint(site_auth, url_prefix="/auth")
     from .models import User
+    from .api import api
+    
     app.register_blueprint(api, url_prefix="/api/v1")
     print(app.url_map)
 
@@ -58,6 +61,7 @@ def create_database(app):
         db.create_all()
         from .models import User
 
+        """
         # comma-separated credentials
         admin_usernames = os.environ.get("DEFAULT_ADMIN_USERNAMES", "").split(",")
         admin_passwords = os.environ.get("DEFAULT_ADMIN_PASSWORDS", "").split(",")
@@ -97,5 +101,18 @@ def create_database(app):
                 is_admin=True
             )
             db.session.add(admin_user)
+        """
+
+        admin_user = User(
+            username="admin",
+            email="admin@example.com",
+            password=gph("password"),
+            is_admin=True
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Created Database")
+        return
+
         db.session.commit()
         print("Created Database")

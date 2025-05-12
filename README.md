@@ -3,7 +3,7 @@
 ## TODO
 
 - [ ] Auth
-    - [ ] Bespoke Auth with Flask-Login
+    - [X] ~~Bespoke Auth with Flask-Login~~
     - [ ] External OAuth providers (Stretch Goal)
         - e.g., Discord, Google, GitHub, etc.
 - [ ] MVP with basic functionality
