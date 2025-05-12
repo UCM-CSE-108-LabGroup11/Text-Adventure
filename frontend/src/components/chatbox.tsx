@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useParams, useLocation } from "react-router-dom";
-import CharacterSheet from "./CharacterSheet";
+import CharacterSheet from "@/CharacterSheet";
 
 // Header component reused from LandingPage for consistent navigation
 function Header() {

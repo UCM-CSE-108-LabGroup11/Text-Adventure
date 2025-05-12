@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import CharacterModal from "./CharacterModal"; // <- make sure this path is correct
+import CharacterModal from "@/CharacterModal";
 
 // Updated to include theme + customTheme
 async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string) {
