@@ -428,11 +428,14 @@ def chat():
         
 
     # Save what the user said
+    sender = data.get("sender", "user")
     user = None
     user_id = get_jwt_identity()
     if user_id:
         user = User.query.get(user_id)
-    user_msg = Message(chatid=chat.id, user=user)
+
+    # Only assign user to the message if sender is explicitly "user"
+    user_msg = Message(chatid=chat.id, user=user if sender == "user" else None)
     db.session.add(user_msg)
     db.session.flush()
     db.session.add(Variant(messageid=user_msg.id, text=message))

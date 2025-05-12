@@ -128,6 +128,7 @@ export default function ChatBox() {
           provider,
           chatId,
           apiKey,
+          sender: "user",
         }),
       });
 

@@ -346,7 +346,8 @@ def get_messages():
             "messages": [
                 {
                     "id": msg.id,
-                    "user": "user" if msg.userid == user_id else "dm",
+                    # if we attached a User object, treat it as player; otherwise DM
+                    "user": "user" if msg.user else "dm",
                     "variants": [v.text for v in msg.variants],
                 }
                 for msg in messages
