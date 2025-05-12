@@ -43,7 +43,7 @@ export default function Login () {
     const [isLoading, setIsLoading] = useState (false);
     const [formError, setFormError] = useState<string | null> (null);
     const { fetchUser } = useAuth();
-    const BASE_URL = "http://localhost:5000";
+    const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>> ({
         resolver: zodResolver (formSchema),
@@ -58,7 +58,7 @@ export default function Login () {
         setFormError (null);
 
         try {
-            const response = await fetch (`${BASE_URL}/api/v1/auth/login`, {
+            const response = await fetch (`/api/v1/auth/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -131,9 +131,22 @@ export default function Login () {
                       <FormItem>
                         <FormLabel>Password: </FormLabel>
                         <FormControl>
-                          <Input placeholder="Password" type="password" {...field} />
+                          <div className="relative">
+                            <Input
+                              placeholder="Password"
+                              type={showPassword ? "text" : "password"}
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-2 text-sm text-blue-600 hover:underline"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                            >
+                              {showPassword ? "Hide" : "Show"}
+                            </button>
+                          </div>
                         </FormControl>
-                        <FormMessage />
+                                                <FormMessage />
                       </FormItem>
                     )}
                   />

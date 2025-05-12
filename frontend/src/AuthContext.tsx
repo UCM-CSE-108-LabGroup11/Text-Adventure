@@ -4,7 +4,6 @@ const AuthContext = createContext<any>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const BASE_URL = "http://localhost:5000";
 
   const fetchUser = async () => {
     const token = localStorage.getItem("access_token");
@@ -14,7 +13,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   
     try {
-      const res = await fetch(`${BASE_URL}/api/v1/auth/me`, {
+      const res = await fetch(`/api/v1/auth/me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

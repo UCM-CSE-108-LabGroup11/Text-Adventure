@@ -9,7 +9,7 @@ import { useGPTKey } from "../GPTKeyContext";
 
 // Updated to include theme + customTheme
 async function createNewChat(name: string, ruleMode: string, theme: string, customTheme: string, apiKey: string | null) {
-  const res = await fetch("http://localhost:5000/api/v1/chats", {
+  const res = await fetch("/api/v1/chats", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -22,7 +22,7 @@ async function createNewChat(name: string, ruleMode: string, theme: string, cust
 }
 
 async function fetchChats() {
-  const res = await fetch("http://localhost:5000/api/v1/chats", {
+  const res = await fetch("/api/v1/chats", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -69,7 +69,7 @@ export default function WorldSelect() {
 
   const handleCharacterSubmit = async (character: any) => {
     try {
-      await fetch("http://localhost:5000/api/v1/character", {
+      await fetch("/api/v1/character", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,7 +96,7 @@ export default function WorldSelect() {
     if (!confirm("Are you sure you want to delete this world?")) return;
   
     try {
-      await fetch(`http://localhost:5000/api/v1/chats/${chatId}`, {
+      await fetch(`/api/v1/chats/${chatId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

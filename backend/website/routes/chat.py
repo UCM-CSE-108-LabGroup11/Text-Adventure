@@ -100,6 +100,8 @@ def roll_stat():
 @chat_bp.route("/chat", methods=["POST"])
 @jwt_required()
 def chat():
+    from website.models import Chat, Message, Variant, Character, User
+    from website import db
     # authenticate user
     userid = get_jwt_identity()
     user = User.query.get(userid)
@@ -342,6 +344,10 @@ def chat():
         .limit(10)
         .all()
     )
+
+    user = User.query.get(userid)
+    username = user.username if user else None
+    
     for msg in reversed(recent_messages):
         text = msg.variants[0].text if msg.variants else ""
         role = "user" if msg.user else "assistant"
@@ -416,6 +422,8 @@ def chat():
         print(f"[HEAL] {character.name} healed {healing} HP. New health: {character.health}")
 
         db.session.commit()
+
+        
 
     # Save what the user said
     user = None
