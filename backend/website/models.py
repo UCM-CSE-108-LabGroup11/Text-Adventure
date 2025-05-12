@@ -4,7 +4,7 @@ from datetime import datetime
 
 from . import db
 
-import random, enum
+import random, enum, json
 
 def shortid(leng: int = 8):
     characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_"
@@ -58,8 +58,19 @@ class Chat(db.Model):
     rule_mode = db.Column(db.String(64), default="narrative")  
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship("Message", back_populates="chat")
+
     theme = db.Column(db.String(64), default="default")
-    custom_theme = db.Column(db.Text, nullable=True)
+    custom_theme = db.Column(db.String(16383), nullable=True)
+    adventure_details = db.Column(db.String(16383), nullable=True)
+
+    @property
+    def adventure(self):
+        if (not self.adventure_details):
+            return(None)
+        try:
+            return(json.loads(self.adventure_details))
+        except:
+            return(None)
 
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,6 +88,7 @@ class Character(db.Model):
 class Message(db.Model):
     __tablename__ = "messages"
     id = db.Column(db.Integer, primary_key=True)
+    chat_index = db.Column(db.Integer, nullable=False)
     chatid = db.Column(db.Integer, db.ForeignKey("chats.id"))
     chat = db.relationship("Chat", back_populates="messages")
     userid = db.Column(db.Integer, db.ForeignKey("users.id"))
